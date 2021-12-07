@@ -14,17 +14,19 @@ from pyPhoto21.database.metadata import Metadata
 #   https://imagej.nih.gov/ij/docs/guide/146-7.html#sub:Native-Formats
 class TSM_Reader(File):
 
-    def __init__(self, save_dir):
-        super().__init__(None)
-        self.save_dir = save_dir
+    def __init__(self):
+        super().__init__(Metadata())
 
-    def load_tsm(self, filename, db, meta):
-        raw_data, metadata_dict, rli, fp_data = self.read_tsm_to_variables(filename)
-        self.populate_meta(meta, metadata_dict)
-        db.meta = meta
-        self.create_npy_file(db, raw_data, rli, fp_data)
+    # def load_tsm(self, filename, db, meta):
+    #     raw_data, metadata_dict, rli, fp_data = self.read_tsm_to_variables(filename)
+    #     self.populate_meta(meta, metadata_dict)
+    #     db.meta = meta
+    #     self.create_npy_file(db, raw_data, rli, fp_data)
 
-    def load_fits(self, filename, db, meta):
+    # side-effect is to create .npy file and populate meta object
+    def load_fits(self, filename, db, meta=None):
+        if meta is None:
+            meta = self.meta
         image_file = get_pkg_data_filename(filename)
         image_data = fits.getdata(image_file, ext=0)
         print("tsm_reader image shape:", image_data.shape)
@@ -43,6 +45,7 @@ class TSM_Reader(File):
 
     # read NI data from .tbn file
     def read_tbn_to_variables(self, filename):
+        pass
 
     def populate_meta(self, meta, metadata_dict):
         pass

@@ -11,6 +11,7 @@ from pyPhoto21.database.file import File
 from pyPhoto21.database.legacy import LegacyData
 from pyPhoto21.database.metadata import Metadata
 from pyPhoto21.analysis.process import Processor
+from pyPhoto21.database.tsm_reader import TSM_Reader
 
 
 # This class will supersede Data...
@@ -196,17 +197,23 @@ class Data(File):
         file = self.strip_path(file)
         file_prefix, extension = file.split('.')
 
-        if extension == "zda":
+        if extension in ["zda", 'fit']:  # import files requiring conversion
             # We will auto-create some files, so find names:
             self.increment_record_until_filename_free()
 
             new_meta = Metadata()
             self.set_meta(new_meta, suppress_resize=True)
-            ld = LegacyData(self.get_save_dir())
-            ld.load_zda(orig_path_prefix + '.zda',
-                        self.db,
-                        new_meta)  # side-effect is to create and populate .npy file
+            if extension == 'zda':
+                ld = LegacyData(self.get_save_dir())
+                ld.load_zda(orig_path_prefix + '.zda',
+                            self.db,
+                            new_meta)  # side-effect is to create and populate .npy file
+            elif extension == 'fit':
+                tsm_reader = TSM_Reader()
+                tsm_reader.load_fits(file, self.db, new_meta)
+
             self.save_metadata_to_json()
+
         elif extension in ['npy', 'json']:
             meta_no_path = file_prefix + self.metadata_extension
             meta_file = orig_path_prefix + self.metadata_extension
