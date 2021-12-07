@@ -197,7 +197,7 @@ class Data(File):
         file = self.strip_path(file)
         file_prefix, extension = file.split('.')
 
-        if extension in ["zda", 'fit']:  # import files requiring conversion
+        if extension in ["zda", 'fit', 'fits']:  # import files requiring conversion
             # We will auto-create some files, so find names:
             self.increment_record_until_filename_free()
 
@@ -208,9 +208,9 @@ class Data(File):
                 ld.load_zda(orig_path_prefix + '.zda',
                             self.db,
                             new_meta)  # side-effect is to create and populate .npy file
-            elif extension == 'fit':
+            elif extension == 'fit' or extension == 'fits':
                 tsm_reader = TSM_Reader()
-                tsm_reader.load_fits(file, self.db, new_meta)
+                tsm_reader.load_fits(orig_path_prefix + '.' + extension, self.db, new_meta)
 
             self.save_metadata_to_json()
 

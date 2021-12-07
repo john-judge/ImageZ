@@ -1,8 +1,9 @@
 import os
 import struct
 import numpy as np
-from astropy.utils.data import get_pkg_data_filename
 from astropy.io import fits
+import fitsio
+from fitsio import FITS,FITSHDR
 
 from pyPhoto21.database.file import File
 from pyPhoto21.database.metadata import Metadata
@@ -27,18 +28,23 @@ class TSM_Reader(File):
     def load_fits(self, filename, db, meta=None):
         if meta is None:
             meta = self.meta
-        image_file = get_pkg_data_filename(filename)
-        image_data = fits.getdata(image_file, ext=0)
-        print("tsm_reader image shape:", image_data.shape)
+        print(filename, "to be treated as FITS file to open")
+
+        with fits.open(filename, ignore_missing_end=True) as hdul:
+            hdul.verify('fix')
+            print(hdul.info())
+            images = hdul[0].data
+
+        print("tsm_reader image shape:", images.shape)
 
         # set metadata in preparation for file creation
-        meta.height, meta.width, meta.num_pts = image_data.shape
+        meta.height, meta.width, meta.num_pts = images.shape
         meta.num_trials = 1
 
         # create npy file from image data
         db.clear_or_resize_mmap_file()  # loads correct dimensions since we already set meta
         arr = db.load_data_raw()
-        arr[0, :, :, :] = image_data[:, :, :]  # only 1 trial per FITS file
+        arr[0, :, :, :] = images[:, :, :]  # only 1 trial per FITS file
 
     def read_tsm_to_variables(self, filename):
         pass

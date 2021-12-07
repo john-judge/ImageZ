@@ -561,7 +561,7 @@ class GUI:
             self.data.save_preference_file(file)
 
     def load_data_file(self):
-        file = self.browse_for_file(['npy', 'json', 'zda', 'fit'])
+        file = self.browse_for_file(['npy', 'json', 'zda', 'fit', 'fits'])
         if file is not None:
             self.freeze_hardware_settings(include_buttons=False, freeze_file_flip=False)
             print("Loading from file:", file, "\nThis will take a few seconds...")
