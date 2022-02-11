@@ -210,7 +210,7 @@ class Data(File):
                             new_meta)  # side-effect is to create and populate .npy file
             elif extension == 'fit' or extension == 'fits':
                 tsm_reader = TSM_Reader()
-                tsm_reader.load_fits(orig_path_prefix + '.' + extension, self.db, new_meta)
+                tsm_reader.load_tsm(orig_path_prefix + '.' + extension, self.db, new_meta)
 
             self.save_metadata_to_json()
 

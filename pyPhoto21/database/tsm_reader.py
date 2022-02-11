@@ -25,17 +25,31 @@ class TSM_Reader(File):
     #     self.create_npy_file(db, raw_data, rli, fp_data)
 
     # side-effect is to create .npy file and populate meta object
-    def load_fits(self, filename, db, meta=None):
+    def load_tsm(self, filename, db, meta=None):
         if meta is None:
             meta = self.meta
-        print(filename, "to be treated as FITS file to open")
+        print(filename, "to be treated as TSM file to open")
 
-        with fits.open(filename, ignore_missing_end=True) as hdul:
-            hdul.verify('fix')
-            print(hdul.info())
-            images = hdul[0].data
+        width = self.meta.width
+        height = self.meta.height
+        num_frames = self.meta.num_pts
 
-        print("tsm_reader image shape:", images.shape)
+        file = open(filename, 'rb')
+        header = file.read(2880)
+
+        images = np.zeros((num_frames, height, width), dtype=np.int16)
+
+        for i in range(num_frames):
+            for j in range(height):
+                for k in range(width):
+                    images[i, j, k] = int.from_bytes(file.read(2), byteorder='little')
+
+        dark_frame = np.zeros((height, width), dtype=np.int16)
+
+        for i in range(height):
+            for j in range(width):
+                dark_frame[i, j] = int.from_bytes(file.read(2), byteorder='little')
+        file.close()
 
         # set metadata in preparation for file creation
         meta.height, meta.width, meta.num_pts = images.shape
@@ -45,9 +59,6 @@ class TSM_Reader(File):
         db.clear_or_resize_mmap_file()  # loads correct dimensions since we already set meta
         arr = db.load_data_raw()
         arr[0, :, :, :] = images[:, :, :]  # only 1 trial per FITS file
-
-    def read_tsm_to_variables(self, filename):
-        pass
 
     # read NI data from .tbn file
     def read_tbn_to_variables(self, filename):
