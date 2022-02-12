@@ -13,12 +13,12 @@ class Metadata:
         self.current_record = 0
 
         # Hardware / DAQ settings
-        self.num_trials = 5
+        self.num_trials = 1
         self.int_trials = 10  # ms
         self.num_records = 1
         self.int_records = 15  # seconds
-        self.camera_program = 7
-        self.height = 40
+        self.camera_program = 2
+        self.height = 320
         self.width = 1024
         self.num_pulses = [1, 1]
         self.int_pulses = [15, 15]
@@ -31,7 +31,7 @@ class Metadata:
 
         self.num_fp = 4
 
-        self.num_pts = 600
+        self.num_pts = 200
         self.int_pts = 1000 / 7500
 
         # Management and Automation / Workflow Settings
