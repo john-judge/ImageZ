@@ -1,4 +1,6 @@
-# pyPhoto21
+# ImageZ
+
+Visualization and analysis software, acquisition-agnostic file reader. A split from [PhotoLib](https://github.com/john-judge/PhotoLib).
 
 ## Demo Footage
 
