@@ -29,17 +29,10 @@ class Data(File):
         super().__init__(self.db.meta)
 
         # Internal (non-user facing) settings and flags
-        self.is_loaded_from_file = False
-        self.is_live_feed_enabled = False
         self.current_trial_index = 0
         self.metadata_extension = '.json'
         self.is_metadata_dirty = False
         self.meta_daemon_stop_flag = False
-
-        # Memory not written to file
-        # raw RLI frames are not written to file or even shown.
-        # We will calculate averages before writing in metadata.
-        self.livefeed_frame = None
 
         # Little Dave reference data
         self.display_widths = [2048, 2048, 1024, 1024, 1024, 1024, 1024, 1024]
@@ -103,8 +96,6 @@ class Data(File):
         self.save_metadata_to_file(fn)
 
     def sync_hardware_from_metadata(self):
-        # if self.get_is_loaded_from_file():
-        #     self.set_is_loaded_from_file(False)
 
         # Settings that don't matter to File
         self.set_camera_program(self.db.meta.camera_program, prevent_resize=True)
@@ -142,7 +133,6 @@ class Data(File):
                   "file manually by opening it with a text editor.")
             # other defaults are more handy to persist.
         else:
-            self.set_is_loaded_from_file(True)
             meta_obj = self.load_metadata_from_file(meta_file)
             if meta_obj is not None:
                 self.set_meta(meta_obj, suppress_resize=True)
@@ -163,7 +153,6 @@ class Data(File):
 
     def load_from_file(self, file):
         self.save_metadata_to_json()
-        self.set_is_loaded_from_file(True)
         print("Loading from:", file)
         orig_path_prefix = file.split(".")[0]
         file = self.strip_path(file)
@@ -326,7 +315,6 @@ class Data(File):
         files = self.find_existing_file_pair(direction=direction)  # includes paths
         if files is None:
             return
-        self.set_is_loaded_from_file(True)
         meta_file, data_file = files
         meta_obj = self.load_metadata_from_file(meta_file)
         if meta_obj is not None:
@@ -438,26 +426,16 @@ class Data(File):
             self.db.load_mmap_file(mode=None)
             self.full_data_processor.update_full_processed_data()
 
-    # This is the allocated memory size, not necessarily the current camera state
-    # However, the Hardware class should be prepared to init camera to this width
     def get_display_width(self):
-        if self.get_is_loaded_from_file():
-            return self.db.meta.width
         return self.display_widths[self.get_camera_program()]
 
-    # This is the allocated memory size, not necessarily the current camera state
-    # However, the Hardware class should be prepared to init camera to this height
     def get_display_height(self):
-        if self.get_is_loaded_from_file():
-            return self.db.meta.height
         return self.display_heights[self.get_camera_program()]
 
     ''' Attributes controlled at Data level '''
 
     def get_num_fp(self):
-        if self.get_is_loaded_from_file():
-            return self.db.meta.num_fp
-        return 4  # Little Dave: Fixed at 4 field potential measurements with NI-USB
+        return self.db.meta.num_fp
 
     def set_num_fp(self, value):
         self.db.meta.num_fp = value
@@ -524,8 +502,6 @@ class Data(File):
         self.increment_record_until_filename_free()
 
     def increment_record_until_filename_free(self):
-        if self.get_is_loaded_from_file():  # more interested in looking at existing files.
-            return
         i = 0
         while i < 100 and (
                 self.file_exists(self.db.get_current_filename(no_path=True,
@@ -938,45 +914,16 @@ class Data(File):
     def set_int_records(self, value):
         self.db.meta.int_records = value
 
-    def get_is_loaded_from_file(self):
-        return self.is_loaded_from_file
-
-    def set_is_loaded_from_file(self, value):
-        if value:
-            self.gui.freeze_hardware_settings(freeze_file_flip=False,
-                                              include_buttons=False)
-        else:
-            self.gui.unfreeze_hardware_settings()
-        self.is_loaded_from_file = value
-
-    def get_is_analysis_only_mode_enabled(self):
-        return self.db.meta.is_analysis_only_mode_enabled
-
-    def set_is_analysis_only_mode_enabled(self, value):
-        self.db.meta.is_analysis_only_mode_enabled = value
-
-    def get_is_schedule_rli_enabled(self):
-        return self.db.meta.is_schedule_rli_enabled
-
-    def set_is_schedule_rli_enabled(self, value):
-        self.db.meta.is_schedule_rli_enabled = value
-
     ''' Attributes controlled at Hardware level '''
 
     def get_int_pts(self):
-        int_pts = self.meta.int_pts
-        if self.get_is_loaded_from_file() or int_pts is None:
-            return self.db.meta.int_pts
-        return int_pts
+        return self.db.meta.int_pts
 
     def get_num_rli_pts(self):
         return self.meta.get_num_dark_rli + self.meta.num_light_rli
 
     def get_acqui_onset(self):
-        onset = self.meta.acqui_onset
-        if self.get_is_loaded_from_file() or onset is None:
-            return self.db.meta.acqui_onset
-        return onset
+        return self.db.meta.acqui_onset
 
     def set_acqui_onset(self, v):
         self.meta.acqui_onset = v
