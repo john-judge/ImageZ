@@ -18,10 +18,9 @@ from pyPhoto21.database.tsm_reader import TSM_Reader
 class Data(File):
 
     # Parsed events from GUI are handed to Data for backend effects.
-    def __init__(self, hardware):
+    def __init__(self):
 
         # interaction with other modules. It is the Data class' responsibility to sync all these.
-        self.hardware = hardware
         self.db = Database()
         self.core = AnalysisCore(self.db.meta)
         self.gui = None
@@ -113,36 +112,9 @@ class Data(File):
         self.set_num_dark_rli(280, prevent_resize=True)  # currently not user-configurable
         self.set_num_light_rli(200, prevent_resize=True)  # currently not user-configurable
 
-        self.hardware.set_num_pulses(value=self.db.meta.num_pulses[0],
-                                     channel=1)
-        self.hardware.set_num_pulses(value=self.db.meta.num_pulses[1],
-                                     channel=2)
-
-        self.hardware.set_int_pulses(value=self.db.meta.int_pulses[0],
-                                     channel=1)
-        self.hardware.set_int_pulses(value=self.db.meta.int_pulses[1],
-                                     channel=2)
-
-        self.hardware.set_num_bursts(value=self.db.meta.num_bursts[0],
-                                     channel=1)
-        self.hardware.set_num_bursts(value=self.db.meta.num_bursts[1],
-                                     channel=2)
-
-        self.hardware.set_int_bursts(value=self.db.meta.int_bursts[0],
-                                     channel=1)
-        self.hardware.set_int_bursts(value=self.db.meta.int_bursts[1],
-                                     channel=2)
-
         self.set_acqui_onset(self.db.meta.acqui_onset)
 
-        self.hardware.set_stim_onset(value=self.db.meta.stim_onset[0],
-                                     channel=1)
-        self.hardware.set_stim_onset(value=self.db.meta.stim_onset[1],
-                                     channel=2)
-        self.hardware.set_stim_duration(value=self.db.meta.stim_duration[0],
-                                        channel=1)
-        self.hardware.set_stim_duration(value=self.db.meta.stim_duration[1],
-                                        channel=2)
+
 
     def set_meta(self, meta, suppress_resize=False):
         """ Given a Metadata class instance, replace in current settings
@@ -491,9 +463,7 @@ class Data(File):
         self.db.meta.num_fp = value
 
     def set_camera_program(self, program, force_resize=False, prevent_resize=False, suppress_processing=False):
-        curr_program = self.hardware.get_camera_program()
-        if curr_program is not None:
-            self.hardware.set_camera_program(program=program)
+        curr_program = self.meta.camera_program
         if (force_resize or curr_program != program) and not prevent_resize:
             self.db.meta.camera_program = program
             self.db.meta.width = self.get_display_width()
@@ -504,10 +474,7 @@ class Data(File):
             self.full_data_processor.update_full_processed_data()
 
     def get_camera_program(self):
-        cam_prog = self.hardware.get_camera_program()
-        if self.get_is_loaded_from_file() or cam_prog is None:
-            return self.db.meta.camera_program
-        return cam_prog
+        return self.db.meta.camera_program
 
     def set_measure_window(self, kind, index, value, suppress_processing=False):
         if index is None:
@@ -523,15 +490,10 @@ class Data(File):
         return self.db.meta.measure_window[index]
 
     def get_num_pts(self):
-        num_pts = self.hardware.get_num_pts()
-        if self.get_is_loaded_from_file() or num_pts is None:
-            return self.db.meta.num_pts
-        return num_pts
+        return self.db.meta.num_pts
 
     def get_num_pulses(self, ch):
-        if self.get_is_loaded_from_file():
-            return self.db.meta.num_pulses[ch - 1]
-        return self.hardware.get_num_pulses(channel=ch)
+        return self.db.meta.num_pulses[ch - 1]
 
     # The purpose of this linspace is to
     # allow us to remove trace points without
@@ -873,14 +835,13 @@ class Data(File):
         tmp = self.get_num_pts()
         if (force_resize or tmp != value) and not prevent_resize:
             self.increment_record_until_filename_free()
-        self.hardware.set_num_pts(value=value)
         self.meta.num_pts = value
         if not suppress_processing:
             self.full_data_processor.update_full_processed_data()
 
     # Populate meta.rli_high from RLI raw frames
     def calculate_light_rli_frame(self, margins=40, force_recalculate=False):
-        d = self.hardware.get_num_dark_rli()
+        d = self.meta.num_dark_rli
         while margins * 2 >= d:
             margins //= 2
         rli_high = self.db.get_rli_high()
@@ -897,7 +858,7 @@ class Data(File):
         return rli_high
 
     def calculate_dark_rli_frame(self, margins=40, force_recalculate=False):
-        d = self.hardware.get_num_dark_rli()
+        d = self.meta.num_dark_rli
         while margins * 2 >= d:
             margins //= 2
         rli_low = self.db.get_rli_low()
@@ -932,7 +893,7 @@ class Data(File):
         return diff
 
     def set_num_dark_rli(self, dark_rli, force_resize=False, prevent_resize=False):
-        tmp = self.hardware.get_num_dark_rli()
+        tmp = self.meta.num_dark_rli
         if (force_resize or tmp != dark_rli) and not prevent_resize:
             w = self.get_display_width()
             h = self.get_display_height()
@@ -940,10 +901,10 @@ class Data(File):
                                            self.get_num_rli_pts(),
                                            w,
                                            h))
-        self.hardware.set_num_dark_rli(dark_rli=dark_rli)
+        self.meta.num_dark_rli = dark_rli
 
     def set_num_light_rli(self, light_rli, force_resize=False, prevent_resize=False):
-        tmp = self.hardware.get_num_light_rli()
+        tmp = self.meta.num_light_rli
         if (force_resize or tmp != light_rli) and not prevent_resize:
             w = self.get_display_width()
             h = self.get_display_height()
@@ -951,7 +912,7 @@ class Data(File):
                                            self.get_num_rli_pts(),
                                            w,
                                            h))
-        self.hardware.set_num_light_rli(light_rli=light_rli)
+        self.meta.num_light_rli = light_rli
 
     def get_num_trials(self):
         return self.db.meta.num_trials
@@ -1003,51 +964,39 @@ class Data(File):
     ''' Attributes controlled at Hardware level '''
 
     def get_int_pts(self):
-        int_pts = self.hardware.get_int_pts()
+        int_pts = self.meta.int_pts
         if self.get_is_loaded_from_file() or int_pts is None:
             return self.db.meta.int_pts
         return int_pts
 
-    def get_acqui_duration(self):
-        if self.get_is_loaded_from_file():
-            return self.db.meta.num_pts * self.db.meta.int_pts
-        return self.hardware.get_acqui_duration()
-
     def get_num_rli_pts(self):
-        return self.hardware.get_num_dark_rli() + self.hardware.get_num_light_rli()
+        return self.meta.get_num_dark_rli + self.meta.num_light_rli
 
     def get_acqui_onset(self):
-        onset = self.hardware.get_acqui_onset()
+        onset = self.meta.acqui_onset
         if self.get_is_loaded_from_file() or onset is None:
             return self.db.meta.acqui_onset
         return onset
 
     def set_acqui_onset(self, v):
         self.meta.acqui_onset = v
-        self.hardware.set_acqui_onset(acqui_onset=v)
 
     def get_stim_onset(self, ch):
         if ch == 1 or ch == 2:
-            if self.get_is_loaded_from_file():
-                return self.db.meta.stim_onset[ch - 1]
-            return self.hardware.get_stim_onset(channel=ch)
+            return self.db.meta.stim_onset[ch - 1]
 
     def set_stim_onset(self, **kwargs):
         if kwargs['value'] is None or type(kwargs['value']) != int:
             kwargs['value'] = 0
-        self.hardware.set_stim_onset(kwargs)
         self.meta.stim_onset[kwargs['channel'] - 1] = float(kwargs['value'])
 
     def get_stim_duration(self, ch):
         if ch == 1 or ch == 2:
-            if self.get_is_loaded_from_file():
-                return self.db.meta.stim_duration[ch - 1]
-            return self.hardware.get_stim_duration(channel=ch)
+            return self.db.meta.stim_duration[ch - 1]
 
     def set_stim_duration(self, **kwargs):
         if kwargs['value'] is None or type(kwargs['value']) != int:
             kwargs['value'] = 0
-        self.hardware.set_stim_duration(kwargs)
         self.meta.stim_duration[kwargs['channel'] - 1] = float(kwargs['value'])
 
     def get_current_trial_index(self):

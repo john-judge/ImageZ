@@ -99,76 +99,6 @@ class Layouts:
             sg.FileSaveAs(key="save_as_window.browse", file_types=file_types)],
             [sg.Button("Open", key='save_as_window.open')]]
 
-    def create_acquisition_tab(self, gui):
-        button_size = (10, 1)
-        field_size = (6, 1)
-        long_button_size = (15, 1)
-        checkbox_size = (8, 1)
-        return [
-            [sg.Button("STOP!", button_color=('black', 'yellow'), size=button_size, tooltip="Stop Acquisition Task"),
-             sg.Button("Take RLI", button_color=('blue', 'white'), size=button_size,
-                       tooltip="Record and Compute Resting Light Intensity (RLI) Frame"),
-             sg.Button("Reset Cam", button_color=('brown', 'gray'), size=button_size,
-                       tooltip="Click this if camera is misbehaving.")],
-            [sg.Button("Live Feed", button_color=('black', 'gray'), size=button_size,
-                       tooltip='View real-time camera output.'),
-             sg.Button("Record", button_color=('black', 'red'), size=button_size,
-                       tooltip='Record images while electrically stimulating'),
-             sg.Checkbox('Auto RLI', default=self.data.get_is_schedule_rli_enabled(),
-                         enable_events=True, key="Auto RLI",
-                         size=checkbox_size, tooltip='Automatically take RLI at the beginning of recording.')],
-            [sg.HorizontalSeparator()],
-            [sg.Text("File Name:", size=(8, 1)),
-             sg.InputText(key="File Name",
-                          default_text=str(gui.data.db.get_current_filename(no_path=True,
-                                                                            extension=self.data.db.extension)),
-                          enable_events=False,
-                          disabled=True,
-                          size=long_button_size,
-                          tooltip='Current target file in selected save folder.'),
-             sg.Button('<', key='Decrement File', tooltip='Jump to previous existing file.'),
-             sg.Button('>', key='Increment File', tooltip='Jump to next existing file.'),
-             sg.Checkbox('Average',
-                         default=self.data.get_is_trial_averaging_enabled(),
-                         enable_events=True,
-                         key="Average Trials",
-                         tooltip='Compute and display for averages of all trials in this recording set (file).',
-                         size=(8, 1)),
-             ],
-            [sg.Text("Slice:", size=(6, 1), justification='right'),
-             sg.InputText(key="Slice Number",
-                          default_text=str(gui.data.get_slice_num()),
-                          enable_events=True,
-                          size=field_size,
-                          tooltip='An index for tracking which brain slice to which this data belongs.'),
-             sg.Button('<', key='Decrement Slice', tooltip='Decrement slice number.'),
-             sg.Button('>', key='Increment Slice', tooltip='Increment slice number.'),
-             sg.Text("Location:", size=(8, 1), justification='right',
-                     tooltip='An index for tracking which electrode location placement to which this data belongs.'),
-             sg.InputText(key="Location Number",
-                          default_text=str(gui.data.get_location_num()),
-                          enable_events=True,
-                          size=field_size),
-             sg.Button('<', key='Decrement Location', tooltip='Decrement location number.'),
-             sg.Button('>', key='Increment Location', tooltip='Inccrement location number.')],
-            [sg.Text("Record:", size=(6, 1), justification='right'),
-             sg.InputText(key="Record Number",
-                          default_text=str(gui.data.get_record_num()),
-                          enable_events=True,
-                          size=field_size,
-                          tooltip='An index for tracking which recording (trial set) to which this data belongs.'),
-             sg.Button('<', key='Decrement Record', tooltip="Decrement record number."),
-             sg.Button('>', key='Increment Record', tooltip="Increment record number."),
-             sg.Text("Trial:", size=(8, 1), justification='right'),
-             sg.InputText(key="Trial Number",
-                          default_text=str(gui.data.get_current_trial_index()),
-                          enable_events=True,
-                          size=field_size,
-                          tooltip="An index for tracking trial number. 'None' indicates all-trial averaging."),
-             sg.Button('<', key='Decrement Trial', tooltip="Increment trial number."),
-             sg.Button('>', key='Increment Trial', tooltip="Decrement trial number.")],
-        ]
-
     def create_roi_tab(self, gui):
         button_size = (6, 1)
         long_button_size = (17, 1)
@@ -492,7 +422,6 @@ class Layouts:
         ]
 
     def create_left_column(self, gui):
-        acquisition_tab_layout = self.create_acquisition_tab(gui)
         analysis_tab_layout = self.create_analysis_tab(gui)
         array_tab_layout = self.create_array_tab(gui)
         filter_tab_layout = self.create_filter_tab()
@@ -500,7 +429,6 @@ class Layouts:
         contrast_layout = self.create_contrast_tab()
 
         tab_group_basic = [sg.TabGroup([[
-            sg.Tab('Acquisition', acquisition_tab_layout),
             sg.Tab('Analysis', analysis_tab_layout),
         ]])]
 
@@ -524,178 +452,6 @@ class Layouts:
 
         return frame_viewer_layout + \
                [tab_group_basic + tab_group_advanced]
-
-    def create_acqui_controls_tab(self):
-        cell_size = (10, 1)
-        return [[sg.Text('', size=cell_size),
-                 sg.Text('ONSET', size=cell_size),
-                 sg.Text('DURATION', size=cell_size)],
-                [sg.Text("Acquisition", size=cell_size),
-                 sg.InputText(key="Acquisition Onset",
-                              default_text=str(self.data.get_acqui_onset()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Time at which image recording begins, in milliseconds.'),
-                 sg.InputText(key="Acquisition Duration",
-                              default_text=str(self.data.get_acqui_duration()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Length of time of image recording, in milliseconds.'),
-                 sg.Text(" ms", size=cell_size)],
-                [sg.Text("Shutter", size=cell_size),
-                 sg.InputText(key="Shutter Onset",
-                              default_text=str(self.data.hardware.get_shutter_onset()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Time at which LED shutter, in milliseconds.'),
-                 sg.Text("", size=cell_size),
-                 sg.Text("ms", size=cell_size)],
-                [sg.Text("Stimulator #1", size=cell_size),
-                 sg.InputText(key="Stimulator #1 Onset",
-                              default_text=str(self.data.get_stim_onset(1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Time at which electrode #1 stimulation begins, in milliseconds.'),
-                 sg.InputText(key="Stimulator #1 Duration",
-                              default_text=str(self.data.get_stim_duration(1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Length of time of electrode #1 stimulation, in milliseconds.'),
-                 sg.Text(" ms", size=cell_size)],
-                [sg.Text("Stimulator #2", size=cell_size),
-                 sg.InputText(key="Stimulator #2 Onset",
-                              default_text=str(self.data.get_stim_onset(2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Time at which electrode #2 stimulation begins, in milliseconds.'),
-                 sg.InputText(key="Stimulator #2 Duration",
-                              default_text=str(self.data.get_stim_duration(2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Length of time of electrode #1 stimulation, in milliseconds.'),
-                 sg.Text(" ms", size=cell_size)]]
-
-    def create_ttl_output_tab(self):
-        camera_programs = self.data.display_camera_programs
-        cell_size = (10, 1)
-        double_cell_size = (20, 1)
-        return [[sg.Text("Number of Points:", size=double_cell_size),
-                 sg.InputText(key="Number of Points",
-                              default_text=str(self.data.get_num_pts()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Number of frames to acquire at this camera frequency.")],
-                [sg.Text("Camera Program:", size=double_cell_size,
-                         tooltip="A pre-programmed camera setting that determines images resolution"
-                                 " and sampling frequency."),
-                 sg.Combo(camera_programs,
-                          enable_events=True,
-                          default_value=camera_programs[self.data.get_camera_program()],
-                          key="-CAMERA PROGRAM-",
-                          tooltip="A pre-programmed camera setting that determines images resolution"
-                                  " and sampling frequency.")]]
-
-    def create_pulses_tab(self):
-        cell_size = (10, 1)
-        double_cell_size = (20, 1)
-        return [[sg.Text("", size=double_cell_size),
-                 sg.Text("Stimulator #1", size=cell_size),
-                 sg.Text("Stimulator #2", size=cell_size)],
-                [sg.Text("Number of pulses:", size=double_cell_size),
-                 sg.InputText(key="num_pulses Stim #1",
-                              default_text=str(self.data.hardware.get_num_pulses(channel=1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Number of pulses in each burst from electrode #1."),
-                 sg.InputText(key="num_pulses Stim #2",
-                              default_text=str(self.data.hardware.get_num_pulses(channel=2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Number of pulses in each burst from electrode #2.")],
-                [sg.Text("Interval between pulses:", size=double_cell_size),
-                 sg.InputText(key="int_pulses Stim #1",
-                              default_text=str(self.data.hardware.get_int_pulses(channel=1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Interval between pulses in each burst from electrode #1."),
-                 sg.InputText(key="int_pulses Stim #2",
-                              default_text=str(self.data.hardware.get_int_pulses(channel=2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Interval between pulses in each burst from electrode #2."),
-                 sg.Text(" ms", size=cell_size)],
-                [sg.Text("Number of bursts:", size=double_cell_size),
-                 sg.InputText(key="num_bursts Stim #1",
-                              default_text=str(self.data.hardware.get_num_bursts(channel=1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Number of bursts (sets of pulses) from electrode #1."),
-                 sg.InputText(key="num_bursts Stim #2",
-                              default_text=str(self.data.hardware.get_num_bursts(channel=2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Number of bursts (sets of pulses) from electrode #2.")],
-                [sg.Text("Interval between bursts:", size=double_cell_size),
-                 sg.InputText(key="int_bursts Stim #1",
-                              default_text=str(self.data.hardware.get_int_bursts(channel=1)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Interval between bursts (sets of pulses) from electrode #1."),
-                 sg.InputText(key="int_bursts Stim #2",
-                              default_text=str(self.data.hardware.get_int_bursts(channel=2)),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip="Interval between bursts (sets of pulses) from electrode #2."),
-                 sg.Text(" ms", size=cell_size)]]
-
-    def create_trials_tab(self):
-        cell_size = (10, 1)
-        double_cell_size = (20, 1)
-
-        return [[sg.Text("Number of Trials:", size=double_cell_size),
-                 sg.InputText(key="num_trials",
-                              default_text=str(self.data.get_num_trials()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Number of trials in each recording.'),
-                 sg.Text("", size=cell_size)],
-                [sg.Text("Interval between Trials:", size=double_cell_size),
-                 sg.InputText(key="int_trials",
-                              default_text=str(self.data.get_int_trials()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Number of seconds between trials in each recording.'),
-                 sg.Text(" s", size=cell_size)]]
-
-    def create_records_tab(self):
-        cell_size = (10, 1)
-        double_cell_size = (20, 1)
-        return [[sg.Text("", size=double_cell_size)],
-                [sg.Text("Record (Sets of Trials) Controls")],
-                [sg.Text("Number of Recordings:", size=double_cell_size),
-                 sg.InputText(key="num_records",
-                              default_text=str(self.data.get_num_records()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Number of recordings (sets of trials).'),
-                 sg.Text("", size=cell_size)],
-                [sg.Text("Interval between Record:", size=double_cell_size),
-                 sg.InputText(key="int_records",
-                              default_text=str(self.data.get_int_records()),
-                              enable_events=True,
-                              size=cell_size,
-                              tooltip='Number of seconds between recordings (sets of trials).'),
-                 sg.Text(" s", size=cell_size)]]
-
-    def create_daq_config_tab(self):
-        daq_timeline_canvas = [[sg.Canvas(key='daq_canvas', size=self.plot_size)]]
-        daq_config_tab_group = [
-            [sg.TabGroup([[
-                sg.Tab('Onset/Duration', self.create_acqui_controls_tab() + self.create_ttl_output_tab()),
-                sg.Tab('Pulses', self.create_pulses_tab()),
-                sg.Tab('Trials', self.create_trials_tab() + self.create_records_tab()),
-            ]])]]
-        return daq_timeline_canvas + daq_config_tab_group
 
     @staticmethod
     def create_display_tab(gui):
@@ -751,60 +507,10 @@ class Layouts:
 
         tab_group_right = [sg.TabGroup([[
             sg.Tab('Trace Viewer', self.create_trace_viewer_tab(gui)),
-            sg.Tab('DAQ Config', self.create_daq_config_tab()),  # plotting a small timeline of record/stim events
             sg.Tab('Notepad', self.create_notepad_tab(), key='Notes'),
             sg.Tab('Time Course', self.create_time_course_tab(gui), key='Time Course')
         ]])]
         return [tab_group_right]
-
-    @staticmethod
-    def list_hardware_settings():
-        return ['Number of Points',
-                'Acquisition Onset',
-                "Acquisition Duration",
-                "Stimulator #1 Onset",
-                "Stimulator #2 Onset",
-                "Stimulator #1 Duration",
-                "Stimulator #2 Duration",
-                "-CAMERA PROGRAM-",
-                "num_pulses Stim #1",
-                "num_pulses Stim #2",
-                "int_pulses Stim #1",
-                "int_pulses Stim #2",
-                "num_bursts Stim #1",
-                "num_bursts Stim #2",
-                "int_bursts Stim #1",
-                "int_bursts Stim #2",
-                "num_trials",
-                "int_trials",
-                "Auto RLI",
-                "Analysis Mode"
-                ]
-
-    @staticmethod
-    def list_file_navigation_fields():
-        return ["Increment Trial",
-                "Decrement Trial",
-                "Increment Record",
-                "Decrement Record",
-                "Increment Location",
-                "Decrement Location",
-                "Increment Slice",
-                "Decrement Slice",
-                "Trial Number",
-                "Location Number",
-                "Record Number",
-                "Slice Number",
-                'num_records',
-                'int_records']
-
-    @staticmethod
-    def list_hardware_events():
-        return ["Live Feed", "Take RLI", "Record", "Reset Cam"]
-
-    @staticmethod
-    def list_file_events():
-        return ["Save Analysis", "Save"]
 
     @staticmethod
     def create_roi_settings_form(gui):

@@ -1,7 +1,6 @@
 import os
 
 from pyPhoto21.gui import GUI
-from pyPhoto21.hardware import Hardware
 from pyPhoto21.data import Data
 from pyPhoto21.database.metadata import Metadata
 
@@ -13,8 +12,7 @@ else:
     print("\t\tDebug")
 
 # We want data and hardware to sync up before we hook up the GUI display
-hardware = Hardware()
-data = Data(hardware)
+data = Data()
 
 # Now GUI will show the consistent settings from Data
 gui = GUI(data, production_mode=PRODUCTION_MODE)

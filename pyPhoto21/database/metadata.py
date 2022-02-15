@@ -28,6 +28,8 @@ class Metadata:
         self.stim_onset = [20, 20]
         self.stim_duration = [1, 1]
         self.version = 6  # Little Dave version
+        self.num_light_rli = 200
+        self.num_dark_rli = 200
 
         self.num_fp = 4
 

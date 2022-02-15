@@ -9,7 +9,6 @@ from webbrowser import open as open_browser
 
 from pyPhoto21.viewers.frame import FrameViewer
 from pyPhoto21.viewers.trace import TraceViewer
-from pyPhoto21.viewers.daq import DAQViewer
 from pyPhoto21.viewers.time_course import TimeCourseViewer
 from pyPhoto21.analysis.roi import ROI
 from pyPhoto21.gui_elements.layouts import *
@@ -30,7 +29,6 @@ class GUI:
         sg.theme('DarkBlue12')
         self.data = data
         data.gui = self
-        self.hardware = data.hardware
         self.production_mode = production_mode
         self.tv = TraceViewer(self)
         self.fv = FrameViewer(self.data, self.tv)
@@ -92,7 +90,6 @@ class GUI:
         self.window.Maximize()
         self.plot_trace()
         self.plot_frame()
-        self.plot_daq_timeline()
         self.plot_time_course()
         self.main_workflow_loop()
         self.window.close()
@@ -108,14 +105,6 @@ class GUI:
             if event == exit_event or event == sg.WIN_CLOSED or event == '-close-':
                 if self.is_recording():
                     self.data.save_metadata_to_json()
-                    print("Cleaning up hardware before exiting. Waiting until safe to exit (or at most 3 seconds)...")
-
-                    self.hardware.set_stop_flag(True)
-                    timeout = 3
-                    while self.hardware.get_stop_flag() and timeout > 0:
-                        time.sleep(1)
-                        timeout -= 1
-                        print(timeout, "seconds")
                 break
             elif event not in self.event_mapping or self.event_mapping[event] is None:
                 print("Not Implemented:", event)
@@ -177,21 +166,6 @@ class GUI:
         figure_canvas_agg.get_tk_widget().pack(fill='none', expand=True)
         return figure_canvas_agg
 
-    def freeze_hardware_settings(self, v=True, include_buttons=True, freeze_file_flip=True):
-        if type(v) == bool:
-            self.freeze_input = v
-            events_to_control = self.layouts.list_hardware_settings()
-            if include_buttons:
-                events_to_control += self.layouts.list_hardware_events()
-                events_to_control += self.layouts.list_file_events()
-            if freeze_file_flip:  # freeze ability to navigate different files with arrow buttons
-                events_to_control += self.layouts.list_file_navigation_fields()
-            for ev in events_to_control:
-                self.window[ev].update(disabled=v)
-
-    def unfreeze_hardware_settings(self):
-        self.freeze_hardware_settings(v=False)
-
     def get_trial_sleep_time(self):
         sleep_sec = self.data.get_int_trials()
         if self.data.get_is_schedule_rli_enabled():
@@ -201,206 +175,6 @@ class GUI:
     def get_record_sleep_time(self):
         sleep_sec = self.data.get_int_records()
         return max(0, sleep_sec - self.get_trial_sleep_time())
-
-    # returns True if stop flag is set
-    def sleep_and_check_stop_flag(self, sleep_time, interval=1):
-        elapsed = 0
-        while elapsed < sleep_time:
-            time.sleep(interval)
-            elapsed += interval
-            if self.hardware.get_stop_flag():
-                self.hardware.set_stop_flag(False)
-                return True
-        return False
-
-    def record_in_background(self):
-        self.freeze_hardware_settings()
-        self.hardware.set_stop_flag(False)
-
-        sleep_trial = self.get_trial_sleep_time()
-        sleep_record = self.get_record_sleep_time()
-
-        self.data.set_is_loaded_from_file(False)
-        exit_recording = False
-
-        if self.data.get_num_records() * self.data.get_num_trials() * self.data.get_num_pts() == 0:
-            print("Settings are such that no trials or points are recorded. Ending recording session.")
-            exit_recording = True
-        if self.data.get_num_pts() <= 10:
-            self.notify_window("Too few points",
-                               "Please increase number of points to record. NI-DAQmx may fail to"
-                               " sample or administer stimulation with"
-                               " too few points.")
-            exit_recording = True
-
-        # Note that record index may not necessarily match the record num for file saving
-        for record_index in range(self.data.get_num_records()):
-            is_last_record = (record_index == self.data.get_num_records() - 1)
-            if exit_recording:
-                break
-
-            self.data.acquire_processing_lock()  # lock processor to avoid interference with image reassembly.
-
-            for trial in range(self.data.get_num_trials()):
-                self.data.set_current_trial_index(trial)
-
-                is_last_trial = (trial == self.data.get_num_trials() - 1)
-                if self.data.get_is_schedule_rli_enabled():
-                    self.take_rli_core()
-                acqui_mem = self.data.get_acqui_memory()
-                self.hardware.record(images=acqui_mem,
-                                     fp_data=self.data.get_fp_data())
-
-                self.update_tracking_num_fields()
-                print("\tTook trial", trial + 1, "of", self.data.get_num_trials())
-                if not is_last_trial:
-                    print("\t\t", sleep_trial, "seconds until next trial...")
-
-                    exit_recording = self.sleep_and_check_stop_flag(sleep_time=sleep_trial)
-                if exit_recording:
-                    break
-
-            self.data.drop_processing_lock()
-            time.sleep(0.2)
-
-            self.data.save_metadata_to_json()
-            self.update_tracking_num_fields()
-            if exit_recording:
-                break
-            print("Took recording set", record_index + 1, "of", self.data.get_num_records())
-            if not is_last_record:
-                self.data.increment_record_until_filename_free()
-                print("\t", sleep_record, "seconds until next recording set...")
-                exit_recording = self.sleep_and_check_stop_flag(sleep_time=sleep_record)
-
-        print("Recording ended.")
-        # done recording
-        self.unfreeze_hardware_settings()
-
-    def record(self, **kwargs):
-        # we spawn a new thread to acquire in the background.
-        # meanwhile the original thread returns and keeps handling GUI clicks
-        # but updates to Data/Hardware fields will be frozen
-        # self.record_in_background()
-        if not self.data.get_is_schedule_rli_enabled():
-            self.notify_window("Auto RLI not enabled",
-                               "RLI will not be automatically collected for each recording set.")
-        if self.data.is_save_dir_default():
-            self.notify_window("Save Folder",
-                               "You haven't chosen a folder to contain new files."
-                               " \nLet's choose a save folder for this recording session.")
-            self.choose_save_dir()
-        self.data.save_metadata_to_json()
-        threading.Thread(target=self.record_in_background, args=(), daemon=True).start()
-
-    ''' RLI Controller functions '''
-
-    def take_rli_core(self):
-        self.hardware.take_rli(images=self.data.get_rli_memory())
-        self.data.calculate_rli(force_recalculate=True)
-        self.data.set_is_loaded_from_file(False)
-        self.data.save_metadata_to_json()
-        if self.fv.get_show_rli_flag():
-            self.fv.update_new_image()
-
-    def take_rli_in_background(self):
-        self.freeze_hardware_settings()
-        self.hardware.set_stop_flag(False)
-        self.take_rli_core()
-        self.unfreeze_hardware_settings()
-
-    def take_rli(self, **kwargs):
-        self.data.get_current_trial_index()
-        threading.Thread(target=self.take_rli_in_background, args=(), daemon=True).start()
-
-    ''' Live Feed Controller functions '''
-
-    def start_livefeed(self, **kwargs):
-        if self.data.get_is_livefeed_enabled():
-            return
-        self.window["Live Feed"].update(button_color=('black', 'yellow'))
-        self.freeze_hardware_settings()
-        self.data.set_is_livefeed_enabled(True)
-        lf_frame = self.data.get_livefeed_frame()
-        if not self.hardware.start_livefeed(lf_frame):  # C++ DLL will keep pointer to lf_frame
-            # Hardware not enabled
-            self.stop_livefeed()
-            return
-
-        # launch live feed daemon: plotter
-        threading.Thread(target=self.continue_livefeed_in_background, args=(lf_frame,), daemon=True).start()
-
-        # launch acqui daemon
-        threading.Thread(target=self.hardware.continue_livefeed, args=(), daemon=True).start()
-
-    # a continuous loop in background
-    def continue_livefeed_in_background(self, lf_frame, fps=50):
-        if not self.data.get_is_livefeed_enabled():
-            return
-        interval = 1.0 / float(fps)
-
-        num_images_shown = 0
-        start = time.time()
-
-        # C++ DLL has stored pointer to lf_frame, no need to keep passing
-        while not self.hardware.get_stop_flag():  # the GUI flag
-            timeout = 80.0
-            if self.hardware.get_livefeed_produced_image_flag():
-                if self.fv.livefeed_im is not None:  # already started
-                    self.fv.update_livefeed_image(lf_frame[1, :, :].astype(np.float64))
-                else:
-                    self.fv.start_livefeed_animation()
-                num_images_shown += 1
-
-                # Allows DLL to continue to next image
-                self.hardware.clear_livefeed_produced_image_flag()
-                time.sleep(interval)
-
-        end = time.time()
-
-        # stop flag read -- notify hardware
-        self.stop_livefeed()
-        print("Live Feed daemon exiting.")
-
-        # Performance metrics
-        actual_fps = num_images_shown / (end - start)
-        print("Livefeed averaged", actual_fps, "fps.")
-        if actual_fps < 10:
-            print("Livefeed performed poorly\n",
-                  "Restarting camera and Photo21 is recommended.")
-
-    def stop_livefeed(self):
-        self.window["Live Feed"].update(button_color=('black', 'gray'))
-        self.hardware.stop_livefeed()  # clean up
-        self.data.set_is_livefeed_enabled(False)
-        self.unfreeze_hardware_settings()
-        self.hardware.set_stop_flag(False)  # take down flag to signal to GUI daemon that we've cleaned up
-        self.fv.end_livefeed_animation()
-        self.data.clear_livefeed_frame()
-
-    def set_camera_program(self, **kwargs):
-        curr_program = self.data.get_camera_program()
-        program_name = kwargs['values']
-        program_index = self.data.display_camera_programs.index(program_name)
-        self.tv.clear_traces()
-        if program_index == 0 and curr_program != 0:
-            self.cached_num_pts = self.data.get_num_pts()
-            self.cached_num_trials = self.data.get_num_trials()
-            self.data.set_num_trials(1)
-            self.window["num_trials"].update('1')
-            self.set_num_pts(values='50', suppress_resize=True)
-            self.data.set_num_dark_rli(1, prevent_resize=True)
-            self.data.set_num_light_rli(1, prevent_resize=True)
-        elif curr_program == 0 and program_index != 0:
-            print("getting cached settings...")
-            self.set_num_pts(values=str(self.cached_num_pts), suppress_resize=True)
-            self.data.set_num_trials(self.cached_num_trials)
-            self.window["num_trials"].update(str(self.cached_num_trials))
-            self.data.set_num_dark_rli(200, prevent_resize=True)
-            self.data.set_num_light_rli(280, prevent_resize=True)
-        self.data.set_camera_program(program_index)
-        self.update_tracking_num_fields()
-        self.window["Acquisition Duration"].update(self.data.get_acqui_duration())
 
     def launch_hyperslicer(self):
         self.fv.launch_hyperslicer()
@@ -581,21 +355,6 @@ class GUI:
         base_skip = self.data.core.get_baseline_skip_window()
         int_pts = self.data.get_int_pts()
 
-        # Hardware settings
-        w['Number of Points'].update(self.data.get_num_pts())
-        w['int_records'].update(self.data.get_int_records())
-        w['num_records'].update(self.data.get_num_records())
-        w['Acquisition Onset'].update(self.data.get_acqui_onset())
-        w['Acquisition Duration'].update(self.data.get_acqui_duration())
-        w['Stimulator #1 Onset'].update(self.data.get_stim_onset(1))
-        w['Stimulator #2 Onset'].update(self.data.get_stim_onset(2))
-        w['Stimulator #1 Duration'].update(self.data.get_stim_duration(1))
-        w['Stimulator #2 Duration'].update(self.data.get_stim_duration(2))
-        w['int_trials'].update(self.data.get_int_trials())
-        w['num_trials'].update(self.data.get_num_trials())
-        w['-CAMERA PROGRAM-'].update(self.data.display_camera_programs[self.data.get_camera_program()])
-        self.dv.update()
-
         # Analysis Settings
         w["Select Baseline Correction"].update(self.data.core.get_baseline_correction_options()[
                                                    self.data.core.get_baseline_correction_type_index()])
@@ -722,66 +481,6 @@ class GUI:
         self.set_current_trial_index(value=new_index)
         self.window["Trial Number"].update(str(self.data.get_current_trial_index()))
 
-    def set_acqui_onset(self, **kwargs):
-        v = kwargs['values']
-        while len(v) > 0 and not self.validate_numeric_input(v, decimal=True, max_val=5000):
-            v = v[:-1]
-        if self.validate_numeric_input(v, decimal=True, max_val=5000):
-            num_frames = float(v) // self.data.get_int_pts()
-            self.data.set_acqui_onset(float(num_frames))
-            self.window['Acquisition Onset'].update(v)
-            self.dv.update()
-
-    def set_num_pts(self, suppress_resize=False, **kwargs):
-        v = kwargs['values']
-
-        while len(v) > 0 and not self.validate_numeric_input(v, decimal=True, max_val=5000):
-            v = v[:-1]
-        if len(v) > 0 and self.validate_numeric_input(v, decimal=True, max_val=5000):
-            acqui_duration = float(v) * self.data.get_int_pts()
-            self.data.set_num_pts(value=int(v), prevent_resize=suppress_resize)  # Data method resizes data
-            self.window["Number of Points"].update(v)
-            self.window["Acquisition Duration"].update(str(acqui_duration))
-        else:
-            self.data.set_num_pts(value=0, prevent_resize=suppress_resize)  # Data method resizes data
-            self.window["Number of Points"].update('')
-            self.window["Acquisition Duration"].update('')
-        self.dv.update()
-        self.update_tracking_num_fields(no_plot_update=True)
-        if self.data.core.get_is_temporal_filter_enabled():
-            filter_type = self.data.core.get_temporal_filter_options()[
-                self.data.core.get_temporal_filter_index()]
-            sigma_t = self.data.core.get_temporal_filter_radius()
-            if not self.data.validate_filter_size(filter_type, sigma_t):
-                self.notify_window("Invalid Settings",
-                                   "Measure window is too small for the"
-                                   " default cropping needed for the temporal filter"
-                                   " settings. \nUntil measure window is widened or "
-                                   " filtering radius is decreased, temporal filtering will"
-                                   " not be applied to traces.")
-
-    def set_acqui_duration(self, **kwargs):
-        v = kwargs['values']
-        min_pts = 10
-
-        # looks at num_pts as well to validate.
-        def is_valid_acqui_duration(u, max_num_pts=15000):
-            return self.validate_numeric_input(u, decimal=True) \
-                   and int(float(u) * self.data.get_int_pts()) <= max_num_pts
-
-        while len(v) > 0 and not is_valid_acqui_duration(v):
-            v = v[:-1]
-        if len(v) > 0 and is_valid_acqui_duration(v):
-            num_pts = int(float(v) // self.data.get_int_pts())
-            self.data.set_num_pts(value=num_pts)
-            self.window["Acquisition Duration"].update(v)
-            self.window["Number of Points"].update(str(num_pts))
-        else:
-            self.data.set_num_pts(value=0)
-            self.window["Acquisition Duration"].update('')
-            self.window["Number of Points"].update('')
-        self.dv.update()
-
     @staticmethod
     def pass_no_arg_calls(**kwargs):
         for key in kwargs:
@@ -885,15 +584,6 @@ class GUI:
         if len(v) == 0 or float(v) != kwargs['values']:
             window[kwargs['event']].update(v)
 
-    def toggle_analysis_mode(self, **kwargs):
-        v = bool(kwargs['values'])
-        if not v and self.data.get_is_loaded_from_file():
-            self.unload_file()
-        self.data.set_is_analysis_only_mode_enabled(v)
-
-    def toggle_auto_rli(self, **kwargs):
-        self.data.set_is_schedule_rli_enabled(kwargs['values'])
-
     # generic setter that links together 2 ms / frame linked fields
     def set_time_window_generic(self, setter_function, arg_dict):
         v = arg_dict['values']
@@ -982,10 +672,6 @@ class GUI:
     def view_roi_plot(self, **kwargs):
         plot_type = kwargs['type']
         self.roi.launch_cluster_score_plot(plot_type)
-
-    def set_num_trials(self, **kwargs):
-        v = kwargs['values']
-        self.data.set_num_trials(int(v))
 
     def define_event_mapping(self):
         if self.event_mapping is None:
