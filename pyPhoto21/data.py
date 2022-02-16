@@ -10,7 +10,6 @@ from pyPhoto21.database.database import Database
 from pyPhoto21.database.file import File
 from pyPhoto21.database.legacy import LegacyData
 from pyPhoto21.database.metadata import Metadata
-from pyPhoto21.analysis.process import Processor
 from pyPhoto21.database.tsm_reader import TSM_Reader
 
 
@@ -25,7 +24,6 @@ class Data(File):
         self.core = AnalysisCore(self.db.meta)
         self.gui = None
 
-        self.full_data_processor = Processor(self)
         super().__init__(self.db.meta)
 
         # Internal (non-user facing) settings and flags
@@ -49,12 +47,6 @@ class Data(File):
         # Init actions
         self.sync_from_metadata()
 
-        # If enabled, start data processor listening for jobs in background
-        if self.full_data_processor.enabled:
-            threading.Thread(target=self.full_data_processor.process_continually,
-                             args=(),
-                             daemon=True).start()
-
     def sync_from_metadata(self, suppress_allocate=False):
         if self.get_is_trial_averaging_enabled():
             self.set_current_trial_index(None)
@@ -62,32 +54,6 @@ class Data(File):
         self.sync_analysis_from_metadata()
         if not suppress_allocate:
             self.allocate_image_memory()
-
-    def is_processed_data_up_to_date(self):
-        return not self.full_data_processor.get_is_data_up_to_date()
-
-    def stop_background_processing(self):
-        self.full_data_processor.stop_processor()
-
-    # blocks until processor daemon has stopped
-    def acquire_processing_lock(self):
-        if not self.full_data_processor.enabled:
-            return
-        # don't need atomic operations -- this will be called from main thread,
-        # which is the only thread that should be queuing processing tasks.
-        self.full_data_processor.pause_processor()
-        while self.full_data_processor.get_is_active():
-            time.sleep(0.5)
-
-    def drop_processing_lock(self):
-        if not self.full_data_processor.enabled:
-            return
-        self.full_data_processor.unpause_processor()
-
-    def sync_analysis_from_metadata(self):
-        if not self.full_data_processor.enabled:
-            return
-        self.full_data_processor.update_full_processed_data()
 
     # numpy autosaves the image arrays; only need to save meta actively
     def save_metadata_to_json(self):
@@ -247,7 +213,6 @@ class Data(File):
         self.db.open_filename = None
         self.load_current_metadata_file()
         self.db.load_mmap_file(mode=None)
-        self.full_data_processor.update_full_processed_data()
 
     def increment_location(self, num=1):
         self.save_metadata_to_json()
@@ -257,7 +222,6 @@ class Data(File):
         self.db.open_filename = None
         self.load_current_metadata_file()
         self.db.load_mmap_file(mode=None)
-        self.full_data_processor.update_full_processed_data()
 
     def increment_record(self, num=1, suppress_file_create=False):
         self.save_metadata_to_json()
@@ -267,7 +231,6 @@ class Data(File):
         if not suppress_file_create:
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
 
     # includes paths
     def find_existing_file_pair(self, direction=1):
@@ -320,7 +283,6 @@ class Data(File):
         if meta_obj is not None:
             self.set_meta(meta_obj, suppress_resize=True)
             self.db.load_mmap_file(mode='r+', filename=data_file)
-            self.full_data_processor.update_full_processed_data()
 
     def increment_file(self):
         self.auto_change_file(direction=1)
@@ -336,7 +298,6 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         else:
             self.db.meta.current_slice = 0
             if num > 1:
@@ -345,7 +306,6 @@ class Data(File):
                 self.db.open_filename = None
                 self.load_current_metadata_file()
                 self.db.load_mmap_file(mode=None)
-                self.full_data_processor.update_full_processed_data()
 
     def decrement_location(self, num=1):
         self.save_metadata_to_json()
@@ -356,14 +316,12 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         else:
             self.db.meta.current_location = 0
             if num > 1:
                 self.db.open_filename = None
                 self.load_current_metadata_file()
                 self.db.load_mmap_file(mode=None)
-                self.full_data_processor.update_full_processed_data()
 
     def decrement_record(self, num=1):
         self.save_metadata_to_json()
@@ -372,14 +330,12 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         else:
             self.db.meta.current_record = 0
             if num > 1:
                 self.db.open_filename = None
                 self.load_current_metadata_file()
                 self.db.load_mmap_file(mode=None)
-                self.full_data_processor.update_full_processed_data()
 
     def set_slice(self, v):
         self.save_metadata_to_json()
@@ -388,13 +344,11 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         elif v < self.db.meta.current_slice:
             self.decrement_slice(self.db.meta.current_slice - v)
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
 
     def set_record(self, v):
         self.save_metadata_to_json()
@@ -403,13 +357,11 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         elif v < self.db.meta.current_record:
             self.decrement_record(self.db.meta.current_record - v)
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
 
     def set_location(self, v):
         self.save_metadata_to_json()
@@ -418,13 +370,11 @@ class Data(File):
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
         if v < self.db.meta.current_location:
             self.decrement_location(self.db.meta.current_location - v)
             self.db.open_filename = None
             self.load_current_metadata_file()
             self.db.load_mmap_file(mode=None)
-            self.full_data_processor.update_full_processed_data()
 
     def get_display_width(self):
         return self.display_widths[self.get_camera_program()]
@@ -440,7 +390,7 @@ class Data(File):
     def set_num_fp(self, value):
         self.db.meta.num_fp = value
 
-    def set_camera_program(self, program, force_resize=False, prevent_resize=False, suppress_processing=False):
+    def set_camera_program(self, program, force_resize=False, prevent_resize=False):
         curr_program = self.meta.camera_program
         if (force_resize or curr_program != program) and not prevent_resize:
             self.db.meta.camera_program = program
@@ -448,19 +398,15 @@ class Data(File):
             self.db.meta.height = self.get_display_height()
             self.meta.int_pts = self.get_int_pts()  # syncs from hardware
             self.increment_record_until_filename_free()
-        if not suppress_processing:
-            self.full_data_processor.update_full_processed_data()
 
     def get_camera_program(self):
         return self.db.meta.camera_program
 
-    def set_measure_window(self, kind, index, value, suppress_processing=False):
+    def set_measure_window(self, kind, index, value):
         if index is None:
             self.db.meta.measure_window = value
         elif index == 0 or index == 1:
             self.db.meta.measure_window[index] = value
-        if not suppress_processing:
-            self.full_data_processor.update_full_processed_data()
 
     def get_measure_window(self, index=None):
         if index is None:
@@ -562,23 +508,13 @@ class Data(File):
     # Based on system state, create/get the frame that should be displayed.
     # index can be an integer or a list of [start:end] over which to average
     def get_display_frame(self, index=None, get_rli=False, binning=1):
-        if self.get_is_livefeed_enabled():
-            return self.get_livefeed_frame()[0, :, :]
-        if self.core.get_show_processed_data():
-            return self.core.get_processed_display_frame()
         images = None
-        using_preprocessed = False
         if get_rli:
             images = self.calculate_rli()
             return images
         else:
             # fetching data
-            if self.full_data_processor.enabled and self.full_data_processor.get_is_data_up_to_date():
-                using_preprocessed = True
-                self.acquire_processing_lock()
-                images = self.get_processed_images()
-            else:
-                images = self.get_acqui_images()
+            images = self.get_acqui_images()
         if images is None:
             return None
         if len(images.shape) != 3:
@@ -597,11 +533,6 @@ class Data(File):
             ret_frame = self.apply_temporal_aggregration_frame(images[index[0]:index[1], :, :])
         else:
             ret_frame = self.apply_temporal_aggregration_frame(images)
-
-        if self.full_data_processor.enabled and using_preprocessed:  # can skip the minimal processing.
-            self.drop_processing_lock()
-            print("Showing frame from fully processed data.")
-            return ret_frame
 
         if ret_frame is None or ret_frame.size < 1:
             return None
@@ -787,17 +718,6 @@ class Data(File):
             trial = 0
         return self.db.load_trial_all_data(trial)
 
-    # Assumes caller is responsible for locking the processed memmapped file
-    def get_processed_images(self):
-        trial = self.get_current_trial_index()
-        if trial is None:
-            images = self.db.load_data_processed()
-            if self.get_is_trial_averaging_enabled():
-                images = np.average(images, axis=0)
-            return images
-        else:
-            return self.db.load_trial_data_processed(trial)
-
     # not the memmapped files, but the memory used for RLI acquisition and calc
     def get_rli_images(self):
         return self.db.rli_images[0, :, :, :]
@@ -805,15 +725,13 @@ class Data(File):
     def get_rli_memory(self):
         return self.db.rli_images[:, :, :, :]
 
-    def set_num_pts(self, value=1, force_resize=False, prevent_resize=False, suppress_processing=True):
+    def set_num_pts(self, value=1, force_resize=False, prevent_resize=False):
         if type(value) != int or value < 1:
             return
         tmp = self.get_num_pts()
         if (force_resize or tmp != value) and not prevent_resize:
             self.increment_record_until_filename_free()
         self.meta.num_pts = value
-        if not suppress_processing:
-            self.full_data_processor.update_full_processed_data()
 
     # Populate meta.rli_high from RLI raw frames
     def calculate_light_rli_frame(self, margins=40, force_recalculate=False):
@@ -920,7 +838,7 @@ class Data(File):
         return self.db.meta.int_pts
 
     def get_num_rli_pts(self):
-        return self.meta.get_num_dark_rli + self.meta.num_light_rli
+        return self.meta.num_dark_rli + self.meta.num_light_rli
 
     def get_acqui_onset(self):
         return self.db.meta.acqui_onset
@@ -966,43 +884,20 @@ class Data(File):
     def get_is_rli_division_enabled(self):
         return self.db.meta.is_rli_division_enabled
 
-    def set_is_rli_division_enabled(self, v, suppress_processing=False):
+    def set_is_rli_division_enabled(self, v):
         self.db.meta.is_rli_division_enabled = v
-        if not suppress_processing:
-            self.full_data_processor.update_full_processed_data()
 
     def get_is_data_inverse_enabled(self):
         return self.db.meta.is_data_inverse_enabled
 
-    def set_is_data_inverse_enabled(self, v, suppress_processing=False):
+    def set_is_data_inverse_enabled(self, v):
         self.db.meta.is_data_inverse_enabled = v
-        if not suppress_processing:
-            self.full_data_processor.update_full_processed_data()
-
-    def get_is_livefeed_enabled(self):
-        return self.is_live_feed_enabled
-
-    def set_is_livefeed_enabled(self, v):
-        self.is_live_feed_enabled = v
 
     def get_display_value_option_index(self):
         return self.db.meta.display_value_option_index
 
     def set_display_value_option_index(self, v):
         self.db.meta.display_value_option_index = v
-
-    def get_livefeed_frame(self):
-        if self.get_is_livefeed_enabled():
-            if self.livefeed_frame is not None:
-                return self.livefeed_frame
-            else:
-                w = self.get_display_width()
-                h = self.get_display_height()
-                self.livefeed_frame = np.zeros((4, h, w), dtype=np.uint16)
-                return self.livefeed_frame
-
-    def clear_livefeed_frame(self):
-        self.livefeed_frame = None
 
     def set_notepad_text(self, **kwargs):
         v = kwargs['values']
