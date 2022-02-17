@@ -327,7 +327,6 @@ class GUI:
     def load_data_file(self):
         file = self.browse_for_file(['npy', 'json', 'zda', 'tsm', 'fits'])
         if file is not None:
-            self.freeze_hardware_settings(include_buttons=False, freeze_file_flip=False)
             print("Loading from file:", file, "\nThis will take a few seconds...")
             self.data.load_from_file(file)
             # Sync GUI
@@ -404,7 +403,6 @@ class GUI:
     # disable file-viewing mode, allowing acquisition to resume
     def unload_file(self):
         if self.data.get_is_loaded_from_file():
-            self.unfreeze_hardware_settings()
             self.data.set_is_loaded_from_file(False)
             self.fv.update_new_image()
 

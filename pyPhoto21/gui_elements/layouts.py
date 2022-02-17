@@ -192,6 +192,63 @@ class Layouts:
     def create_freq_decomp_tab(self):
         return []
 
+    def create_file_tab(self, gui):
+        button_size = (10, 1)
+        field_size = (6, 1)
+        long_button_size = (15, 1)
+        checkbox_size = (8, 1)
+        return [
+            [sg.Text("File Name:", size=(8, 1)),
+             sg.InputText(key="File Name",
+                          default_text=str(gui.data.db.get_current_filename(no_path=True,
+                                                                            extension=self.data.db.extension)),
+                          enable_events=False,
+                          disabled=True,
+                          size=long_button_size,
+                          tooltip='Current target file in selected save folder.'),
+             sg.Button('<', key='Decrement File', tooltip='Jump to previous existing file.'),
+             sg.Button('>', key='Increment File', tooltip='Jump to next existing file.'),
+             sg.Checkbox('Average',
+                         default=self.data.get_is_trial_averaging_enabled(),
+                         enable_events=True,
+                         key="Average Trials",
+                         tooltip='Compute and display for averages of all trials in this recording set (file).',
+                         size=(8, 1)),
+             ],
+            [sg.Text("Slice:", size=(6, 1), justification='right'),
+             sg.InputText(key="Slice Number",
+                          default_text=str(gui.data.get_slice_num()),
+                          enable_events=True,
+                          size=field_size,
+                          tooltip='An index for tracking which brain slice to which this data belongs.'),
+             sg.Button('<', key='Decrement Slice', tooltip='Decrement slice number.'),
+             sg.Button('>', key='Increment Slice', tooltip='Increment slice number.'),
+             sg.Text("Location:", size=(8, 1), justification='right',
+                     tooltip='An index for tracking which electrode location placement to which this data belongs.'),
+             sg.InputText(key="Location Number",
+                          default_text=str(gui.data.get_location_num()),
+                          enable_events=True,
+                          size=field_size),
+             sg.Button('<', key='Decrement Location', tooltip='Decrement location number.'),
+             sg.Button('>', key='Increment Location', tooltip='Inccrement location number.')],
+            [sg.Text("Record:", size=(6, 1), justification='right'),
+             sg.InputText(key="Record Number",
+                          default_text=str(gui.data.get_record_num()),
+                          enable_events=True,
+                          size=field_size,
+                          tooltip='An index for tracking which recording (trial set) to which this data belongs.'),
+             sg.Button('<', key='Decrement Record', tooltip="Decrement record number."),
+             sg.Button('>', key='Increment Record', tooltip="Increment record number."),
+             sg.Text("Trial:", size=(8, 1), justification='right'),
+             sg.InputText(key="Trial Number",
+                          default_text=str(gui.data.get_current_trial_index()),
+                          enable_events=True,
+                          size=field_size,
+                          tooltip="An index for tracking trial number. 'None' indicates all-trial averaging."),
+             sg.Button('<', key='Decrement Trial', tooltip="Increment trial number."),
+             sg.Button('>', key='Increment Trial', tooltip="Decrement trial number.")],
+        ]
+
     def create_analyses_tab_group(self, gui):
         return [sg.TabGroup([[
             sg.Tab('Cluster/ROI', self.create_roi_tab(gui)),
@@ -422,8 +479,10 @@ class Layouts:
         filter_tab_layout = self.create_filter_tab()
         baseline_tab_layout = self.create_baseline_tab(gui)
         contrast_layout = self.create_contrast_tab()
+        file_tab_layout = self.create_file_tab(gui)
 
         tab_group_basic = [sg.TabGroup([[
+            sg.Tab("Files", file_tab_layout),
             sg.Tab('Analysis', analysis_tab_layout),
         ]])]
 
