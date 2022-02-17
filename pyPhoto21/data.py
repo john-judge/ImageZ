@@ -51,7 +51,6 @@ class Data(File):
         if self.get_is_trial_averaging_enabled():
             self.set_current_trial_index(None)
         self.sync_hardware_from_metadata()
-        self.sync_analysis_from_metadata()
         if not suppress_allocate:
             self.allocate_image_memory()
 

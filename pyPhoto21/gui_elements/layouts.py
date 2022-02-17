@@ -201,12 +201,7 @@ class Layouts:
 
     def create_analysis_tab(self, gui):
         return [
-                   [sg.Checkbox('Analysis Mode',
-                                default=self.data.get_is_analysis_only_mode_enabled(),
-                                enable_events=True,
-                                key="Analysis Mode",
-                                size=(12, 1), tooltip='Automatically save .npy/.pbz2 between records (sets of trials)'),
-                    sg.Button("Save Analysis", button_color=('white', 'green'), size=(12, 1),
+                   [sg.Button("Save Analysis", button_color=('white', 'green'), size=(12, 1),
                               tooltip='Export all analyzed data to Origin/Excel/R-'
                                       'interoperable formats (tab-separated values)'),
                     sg.Button("Save", button_color=('white', 'green'), size=(10, 1),

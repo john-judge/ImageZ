@@ -33,7 +33,6 @@ class FrameViewer(Viewer):
 
         self.current_frame = None
         self.im = None
-        self.livefeed_im = None
         self.update_num_frames()
         self.populate_figure()
 
@@ -217,7 +216,7 @@ class FrameViewer(Viewer):
             self.pan_offset[0] -= dx
             self.pan_offset[1] -= dy
             print("Panned frame by ", dx, dy)
-            self.update_zoom_pan_only(redraw=self.livefeed_im is None)
+            self.update_zoom_pan_only()
         else:
             print("Failed to pan frame. Draw path:", self.draw_path)
 
@@ -267,8 +266,6 @@ class FrameViewer(Viewer):
                 self.path_x_index[x].append(y)
 
     def draw_line(self, p1, p2, is_deletion):
-        if self.livefeed_im is not None:
-            return
         xs = [p1[0], p2[0]]
         ys = [p1[1], p2[1]]
         color = 'white'
@@ -319,20 +316,10 @@ class FrameViewer(Viewer):
 
     def update_new_image(self):
         self.fig.clf()
-        if self.data.get_is_livefeed_enabled():
-            self.start_livefeed_animation()
-        else:
-            self.redraw_slider()
-            self.populate_figure()
-            self.update()
-            self.plot_all_shapes()
-
-    def update_livefeed_image(self, lf_frame):
-        if self.livefeed_im is None:
-            return
-        self.livefeed_im.set_data(lf_frame)
-        self.set_zoom_pan()
-        self.fig.canvas.draw_idle()
+        self.redraw_slider()
+        self.populate_figure()
+        self.update()
+        self.plot_all_shapes()
 
     def refresh_current_frame(self):
         self.current_frame = self.data.get_display_frame(index=self.ind,
@@ -345,36 +332,10 @@ class FrameViewer(Viewer):
             # purposely induce saturation:
             self.current_frame[self.current_frame >= new_vmax] = new_vmax
 
-    def start_livefeed_animation(self):
-        print("Starting livefeed animation...")
-        self.refresh_current_frame()
-        self.ax = self.fig.add_subplot(1, 1, 1)
-
-        self.livefeed_im = self.ax.imshow(self.current_frame.astype(np.uint16),
-                                          interpolation='nearest',
-                                          aspect='auto',
-                                          cmap=self.get_color_map_option_name())
-        self.orig_x_lims = self.ax.get_xlim()
-        self.orig_y_lims = self.ax.get_ylim()
-        self.fig.canvas.draw_idle()
-
-    def end_livefeed_animation(self):
-        self.livefeed_im = None
-        self.reset_frame_view()
-        self.update_new_image()
-
     def update(self, update_hyperslicer=True):
         self.refresh_current_frame()
 
-        if self.data.get_is_livefeed_enabled():
-            p_low, p_high = np.percentile(self.current_frame,
-                                          [2.5, 97.5])
-            self.livefeed_im.set_data(self.current_frame,
-                                      vmin=p_low,
-                                      vmax=p_high)
-            update_hyperslicer = False
-
-        elif self.current_frame is not None:
+        if self.current_frame is not None:
             self.im.set_data(self.current_frame)
             self.im.set_clim(vmin=np.min(self.current_frame),
                              vmax=np.max(self.current_frame))

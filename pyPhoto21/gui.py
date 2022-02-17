@@ -32,7 +32,6 @@ class GUI:
         self.production_mode = production_mode
         self.tv = TraceViewer(self)
         self.fv = FrameViewer(self.data, self.tv)
-        self.dv = DAQViewer(self.data)
         self.tcv = TimeCourseViewer(self)
         self.roi = ROI(self.data)
         self.exporter = Exporter(self.tv, self.fv)
@@ -117,14 +116,6 @@ class GUI:
                 ev['function'](**ev['args'])
         if history_debug and not self.production_mode:
             print("**** History of Events ****\n", events)
-
-    def is_recording(self):
-        return self.freeze_input and not self.data.get_is_loaded_from_file()
-
-    def plot_daq_timeline(self):
-        fig = self.dv.get_fig()
-        self.draw_figure(self.window['daq_canvas'].TKCanvas, fig)
-        self.dv.update()
 
     def plot_time_course(self):
         fig = self.tcv.get_fig()
@@ -327,7 +318,6 @@ class GUI:
             self.sync_gui_fields_from_meta()
             self.fv.update_new_image()
             self.tv.update_new_traces()
-            self.dv.update()
 
     def save_preference(self):
         file = self.browse_for_save_as_file(('JSON', "*" + self.data.metadata_extension))
@@ -347,7 +337,6 @@ class GUI:
             print("File Loaded.")
             self.fv.update_new_image()
             self.tv.update_new_traces()
-            self.dv.update()
 
     # Pull all file-based data from Data and sync GUI fields
     def sync_gui_fields_from_meta(self):
@@ -530,9 +519,6 @@ class GUI:
             for fn in fns_to_call:
                 fn(value=0, channel=ch)
             window[kwargs['event']].update('')
-
-        # update DAQ timeline visualization
-        self.dv.update()
 
     def launch_roi_settings(self, **kwargs):
         w = sg.Window('ROI Identification Settings',

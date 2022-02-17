@@ -2,32 +2,12 @@ class EventMapping:
 
     def __init__(self, gui):
         self.event_mapping = {
-            'Record': {
-                'function': gui.record,
-                'args': {}
-            },
-            'Take RLI': {
-                'function': gui.take_rli,
-                'args': {}
-            },
             'Save': {
                 'function': gui.data.save_metadata_to_json,
                 'args': {}
             },
-            'Analysis Mode': {
-                'function': gui.toggle_analysis_mode,
-                'args': {}
-            },
-            'Auto RLI': {
-                'function': gui.toggle_auto_rli,
-                'args': {}
-            },
             'Launch Hyperslicer': {
                 'function': gui.launch_hyperslicer,
-                'args': {},
-            },
-            "-CAMERA PROGRAM-": {
-                'function': gui.set_camera_program,
                 'args': {},
             },
             "Select Background": {
@@ -65,66 +45,6 @@ class EventMapping:
             "Choose Save Directory": {
                 'function': gui.choose_save_dir,
                 'args': {},
-            },
-            'Acquisition Onset': {
-                'function': gui.set_acqui_onset,
-                'args': {},
-            },
-            'Acquisition Duration': {
-                'function': gui.set_acqui_duration,
-                'args': {},
-            },
-            'Stimulator #1 Onset': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_stim_onset},
-            },
-            'Shutter Onset': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': None, 'call': gui.data.hardware.set_shutter_onset},
-            },
-            'Stimulator #2 Onset': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_stim_onset},
-            },
-            'Stimulator #1 Duration': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_stim_duration},
-            },
-            'Stimulator #2 Duration': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_stim_duration},
-            },
-            'num_pulses Stim #1': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_num_pulses},
-            },
-            'num_pulses Stim #2': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_num_pulses},
-            },
-            'int_pulses Stim #1': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_int_pulses},
-            },
-            'int_pulses Stim #2': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_int_pulses},
-            },
-            'num_bursts Stim #1': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_num_bursts},
-            },
-            'num_bursts Stim #2': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_num_bursts},
-            },
-            'int_bursts Stim #1': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 1, 'call': gui.data.hardware.set_int_bursts},
-            },
-            'int_bursts Stim #2': {
-                'function': gui.validate_and_pass_channel,
-                'args': {'channel': 2, 'call': gui.data.hardware.set_int_bursts},
             },
             "ROI Identifier Config": {
                 'function': gui.launch_roi_settings,
@@ -242,26 +162,6 @@ class EventMapping:
                 'function': gui.save_roi_file,
                 'args': {'type': 'elbow'}
             },
-            'num_trials': {
-                'function': gui.validate_and_pass_int,
-                'args': {'call': gui.data.set_num_trials, 'max_val': 20},
-            },
-            'int_trials': {
-                'function': gui.validate_and_pass_int,
-                'args': {'call': gui.data.set_int_trials},
-            },
-            'Number of Points': {
-                'function': gui.set_num_pts,
-                'args': {}
-            },
-            'num_records': {
-                'function': gui.validate_and_pass_int,
-                'args': {'call': gui.data.set_num_records, 'max_val': 20},
-            },
-            'int_records': {
-                'function': gui.validate_and_pass_int,
-                'args': {'call': gui.data.set_int_records},
-            },
             "Increment Trial": {
                 'function': gui.pass_no_arg_calls,
                 'args': {'call': gui.data.increment_current_trial_index,
@@ -332,10 +232,6 @@ class EventMapping:
                 'args': {'call': gui.set_slice,
                          'call2': gui.update_tracking_num_fields}
             },
-            "STOP!": {
-                'function': gui.hardware.set_stop_flag,
-                'args': {}
-            },
             "Temporal Filter Radius": {
                 'function': gui.set_t_filter_radius,
                 'args': {}
@@ -360,20 +256,12 @@ class EventMapping:
                 'function': gui.set_baseline_correction,
                 'args': {}
             },
-            "Reset Cam": {
-                'function': gui.hardware.reset_camera,
-                'args': {}
-            },
             'RLI Division': {
                 'function': gui.set_rli_division,
                 'args': {}
             },
             'Data Inverse': {
                 'function': gui.set_data_inverse,
-                'args': {}
-            },
-            'Live Feed': {
-                'function': gui.start_livefeed,
                 'args': {}
             },
             "Select Display Value": {

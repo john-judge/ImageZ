@@ -2,9 +2,6 @@ import numpy as np
 from skimage.transform import downscale_local_mean
 import cv2 as cv
 
-from pyPhoto21.analysis.process import Processor
-
-
 # Analysis functionality shared by many features
 class AnalysisCore:
 
@@ -32,10 +29,6 @@ class AnalysisCore:
             'Cubic'
         ]
 
-        # Display frame cached by analysis submodules
-        self.current_processed_frame = None
-        self.show_processed_data = False
-
     def set_is_temporal_filter_enabled(self, v):
         self.meta.is_temporal_filer_enabled = v
 
@@ -54,7 +47,7 @@ class AnalysisCore:
     def get_temporal_filter_index(self):
         return self.meta.temporal_filter_type_index
 
-    def set_temporal_filter_index(self, v, suppress_processing=False):
+    def set_temporal_filter_index(self, v):
         self.meta.temporal_filter_type_index = v
 
     def set_is_spatial_filter_enabled(self, v):
@@ -77,20 +70,6 @@ class AnalysisCore:
 
     def set_baseline_correction_type_index(self, v):
         self.meta.baseline_correction_type_index = v
-
-    def get_processed_display_frame(self):
-        return self.current_processed_frame
-
-    def set_processed_display_frame(self, image):
-        if type(image) != np.ndarray or len(image.shape) != 2:
-            print("Not a valid processed display frame (core.py)!")
-        self.current_processed_frame = image
-
-    def set_show_processed_data(self, v):
-        self.show_processed_data = v
-
-    def get_show_processed_data(self):
-        return self.show_processed_data
 
     @staticmethod
     def get_snr(data):
