@@ -102,8 +102,6 @@ class GUI:
             if history_debug and event is not None and not self.production_mode:
                 events += str(event) + '\n'
             if event == exit_event or event == sg.WIN_CLOSED or event == '-close-':
-                if self.is_recording():
-                    self.data.save_metadata_to_json()
                 break
             elif event not in self.event_mapping or self.event_mapping[event] is None:
                 print("Not Implemented:", event)
@@ -260,11 +258,6 @@ class GUI:
             elif event == "save_as_window.open":
                 new_file = values["save_as_window.browse"]
                 break
-        if self.is_recording():
-            new_file = self.data.get_save_dir()
-            self.notify_window("Warning",
-                               "Please stop recording before exporting data.")
-            new_file = None
         w.close()
         if new_file is None or len(new_file) < 1:
             return None
@@ -287,13 +280,6 @@ class GUI:
             elif event == "folder_window.open":
                 folder = values["folder_window.browse"]
                 break
-        if recording_notif and self.is_recording():
-            folder = self.data.get_save_dir()
-            self.notify_window("Warning",
-                               "You are changing the save location during acquisition." +
-                               "I don't recommend scattering your files. " +
-                               "Keeping this save directory:\n" +
-                               folder)
         folder_window.close()
         if len(folder) < 1:
             return None

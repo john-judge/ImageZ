@@ -84,7 +84,7 @@ class Database(File):
         if self.file_exists(self.get_current_filename(no_path=True, extension=self.extension)) and \
                 not self.is_current_data_file_empty():
             print("File exists and contains nonzero data. Warning: data may be overwritten.")
-        self.load_mmap_file(mode="w+")
+        self.load_mmap_file(mode=None)
 
     def load_trial_data_raw(self, trial):
         return self.memmap_file[trial, 0, :-3, :-1, :]

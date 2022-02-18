@@ -29,6 +29,17 @@ class TSM_Reader(File):
 
         file = open(filename, 'rb')
         header = str(file.read(2880))
+
+        # header parsing
+        header = [x.strip() for x in header.split(" ") if x != "=" and len(x) > 0]
+        for i in range(len(header)):
+            if header[i] == "NAXIS1":
+                width = int(header[i+1])
+            if header[i] == "NAXIS2":
+                height = int(header[i+1])
+            if header[i] == "NAXIS3":
+                num_pts = int(header[i+1])
+
         print(header)
 
         images = np.zeros((num_pts, height, width), dtype=np.int16)
