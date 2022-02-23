@@ -46,6 +46,14 @@ class EventMapping:
                 'function': gui.choose_save_dir,
                 'args': {},
             },
+            'Choose Load Directory': {
+                'function': gui.choose_load_dir,
+                'args': {},
+            },
+            "Load Directory File List": {
+                'function': gui.autoload_file,
+                'args': {},
+            },
             "ROI Identifier Config": {
                 'function': gui.launch_roi_settings,
                 'args': {},

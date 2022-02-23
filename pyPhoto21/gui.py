@@ -1,6 +1,7 @@
 import numpy as np
 import threading
 import time
+import os
 import string
 import PySimpleGUI as sg
 import matplotlib
@@ -14,12 +15,6 @@ from pyPhoto21.analysis.roi import ROI
 from pyPhoto21.gui_elements.layouts import *
 from pyPhoto21.gui_elements.event_mapping import EventMapping
 from pyPhoto21.export import Exporter
-
-
-# from mpl_interactions import image_segmenter
-
-
-# import io
 
 
 class GUI:
@@ -37,10 +32,10 @@ class GUI:
         self.exporter = Exporter(self.tv, self.fv)
         self.layouts = Layouts(data)
         self.window = None
+        self.autoload_dir = None
 
         # general state/settings
         self.title = "Photo21"
-        self.freeze_input = False  # whether to allow fields to be updated. Frozen during acquire (how about during file loaded?)
         self.event_mapping = None
         self.define_event_mapping()  # event callbacks used in event loops
         self.cached_num_pts = 600  # number of points to restore to whenever not 200 Hz cam program
@@ -202,6 +197,39 @@ class GUI:
             self.window["Time Course File Selector"].update(self.data.get_data_filenames_in_folder())
             print("New save location:", folder)
 
+    def choose_load_dir(self, **kwargs):
+        folder = self.browse_for_folder()
+        if folder is not None:
+            self.autoload_dir = folder
+            print("New directory watched for files to analyze:", folder)
+
+    def autoload_file(self, **kwargs):
+        selected_file = kwargs['values'][0]
+        self.update_autoload_files(selected_file=selected_file)
+        file = self.autoload_dir + "/" + selected_file
+        try:
+            print("Autoloading:", file)
+            self.data.load_from_file(file)
+        except:
+            print("Could not load data from", file)
+            return
+        # Sync GUI
+        self.sync_gui_fields_from_meta()
+        self.fv.update_new_image()
+        self.tv.update_new_traces()
+
+    def get_watched_files(self):
+        return os.listdir(self.autoload_dir)
+
+    def update_autoload_files(self, selected_file=None):
+        if self.autoload_dir is None:
+            return
+        # check for new files
+        curr_files = self.get_watched_files()
+        self.window["Load Directory File List"].update(curr_files)
+        if selected_file is not None:
+            self.window["Load Directory File List"].set_value(selected_file)
+
     def browse_for_file(self, file_extensions, multi_file=False, tsv_only=False):
         layout_choice = None
         if not multi_file:
@@ -234,10 +262,6 @@ class GUI:
                                        "Unsupported file type.\nSupported: " + supported_file_str)
                 else:
                     break
-        if self.freeze_input and not self.data.get_is_loaded_from_file():
-            file = None
-            self.notify_window("File Input Error",
-                               "Cannot load file during acquisition")
         file_window.close()
         return file
 
@@ -317,7 +341,6 @@ class GUI:
             self.data.load_from_file(file)
             # Sync GUI
             self.sync_gui_fields_from_meta()
-            # Freeze input fields to hardware
 
             print("File Loaded.")
             self.fv.update_new_image()

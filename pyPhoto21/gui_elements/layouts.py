@@ -21,7 +21,7 @@ class Layouts:
 
     def create_menu(self):
         menu_def = [['Photo21 LilDave', ['Help', 'About']],
-                    ['File', ['Open', 'Choose Save Directory', 'Exit']],
+                    ['File', ['Open', 'Choose Save Directory', 'Choose Load Directory', 'Exit']],
                     ['Preference', ['Save Preference', 'Load Preference'], ],
                     ['Export', ['---', 'Selected Frame to TSV', 'Selected Traces to TSV',
                                 '---', 'Selected Frame to PNG', 'Selected Traces to PNG',
@@ -247,6 +247,18 @@ class Layouts:
                           tooltip="An index for tracking trial number. 'None' indicates all-trial averaging."),
              sg.Button('<', key='Decrement Trial', tooltip="Increment trial number."),
              sg.Button('>', key='Increment Trial', tooltip="Decrement trial number.")],
+        ]
+
+    def create_watcher_tab(self, gui):
+        return [
+            [sg.Text("Detected Files in Load Directory:")],
+            [sg.Listbox(values=gui.get_watched_files(),
+                        size=(50, 20),
+                        tooltip="Files in your load directory will appear here"
+                                ". Select a file to convert/import to the save"
+                                "directory.",
+                        key="Load Directory File List",
+                        enable_events=True)]
         ]
 
     def create_analyses_tab_group(self, gui):
@@ -480,9 +492,11 @@ class Layouts:
         baseline_tab_layout = self.create_baseline_tab(gui)
         contrast_layout = self.create_contrast_tab()
         file_tab_layout = self.create_file_tab(gui)
+        watcher_tab_layout = self.create_watcher_tab(gui)
 
         tab_group_basic = [sg.TabGroup([[
-            sg.Tab("Files", file_tab_layout),
+            sg.Tab("Exporter", file_tab_layout),
+            sg.Tab("File Watcher", watcher_tab_layout),
             sg.Tab('Analysis', analysis_tab_layout),
         ]])]
 
