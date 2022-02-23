@@ -706,25 +706,21 @@ class GUI:
         tf_index = self.data.core.get_temporal_filter_options().index(tf_name)
         self.data.core.set_temporal_filter_index(tf_index)
         self.tv.update_new_traces()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_t_filter_radius(self, **kwargs):
         v = int(kwargs['values'])
         self.data.core.set_temporal_filter_radius(v)
         self.tv.update_new_traces()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_s_filter_sigma(self, **kwargs):
         v = float(kwargs['values'])
         self.data.core.set_spatial_filter_sigma(v)
         self.fv.update_new_image()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_is_t_filter_enabled(self, **kwargs):
         v = bool(kwargs['values'])
         self.data.core.set_is_temporal_filter_enabled(v)
         self.tv.update_new_traces()
-        self.data.full_data_processor.update_full_processed_data()
         if self.data.core.get_is_temporal_filter_enabled():
             filter_type = self.data.core.get_temporal_filter_options()[
                 self.data.core.get_temporal_filter_index()]
@@ -741,7 +737,6 @@ class GUI:
         v = bool(kwargs['values'])
         self.data.core.set_is_spatial_filter_enabled(v)
         self.fv.update_new_image()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_baseline_correction(self, **kwargs):
         v = kwargs['values']
@@ -749,21 +744,18 @@ class GUI:
         self.data.core.set_baseline_correction_type_index(v)
         self.tv.update_new_traces()
         self.fv.update_new_image()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_rli_division(self, **kwargs):
         v = bool(kwargs['values'])
         self.data.set_is_rli_division_enabled(v)
         self.tv.update_new_traces()
         self.fv.update_new_image()
-        self.data.full_data_processor.update_full_processed_data()
 
     def set_data_inverse(self, **kwargs):
         v = bool(kwargs['values'])
         self.data.set_is_data_inverse_enabled(v)
         self.tv.update_new_traces()
         self.fv.update_new_image()
-        self.data.full_data_processor.update_full_processed_data()
 
     def export_data(self, **kwargs):
         kind = kwargs['kind']

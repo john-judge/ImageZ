@@ -54,7 +54,6 @@ class LegacyData(File):
         # Hardware / DAQ settings
         meta_obj.num_trials = metadata_dict['number_of_trials']
         meta_obj.int_trials = metadata_dict['interval_between_trials']
-        meta_obj.camera_program = metadata_dict['camera_program']
         meta_obj.height = metadata_dict['raw_height']
         meta_obj.width = metadata_dict['raw_width']
         meta_obj.acqui_onset = metadata_dict['acquisition_onset']

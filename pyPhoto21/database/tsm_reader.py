@@ -40,7 +40,7 @@ class TSM_Reader(File):
             if header[i] == "NAXIS3":
                 num_pts = int(header[i+1])
 
-        print(header)
+        print("Reading file as", num_pts, "images of size", width, "x", height)
 
         images = np.zeros((num_pts, height, width), dtype=np.int16)
 
@@ -65,10 +65,34 @@ class TSM_Reader(File):
         arr = db.load_data_raw()
         arr[0, :, :, :] = images[:, :, :]  # only 1 trial per FITS file
         print(arr.shape)
+        tbn_filename = filename.split(".tsm")[0] + ".tbn"
+        self.load_tbn(tbn_filename, db, num_pts)
 
     # read NI data from .tbn file
-    def read_tbn_to_variables(self, filename):
-        pass
+    def load_tbn(self, filename, db, num_pts, trial=0):
+
+        if db.file_exists_in_own_path(filename):
+            print("Found file to load FP data from:", filename)
+        else:
+            print("Could not find a matching .tbn file:", filename)
+            return
+
+        file = open(filename, 'rb')
+
+        num_channels = int.from_bytes(file.read(2), byteorder='little', signed=True)
+        if num_channels < 0:
+            print("TBN file designates origin as NI for this data.")
+            num_channels *= -1
+        BNC_ratio = int.from_bytes(file.read(2), byteorder='little')
+        num_channels = min(self.meta.num_fp, num_channels)
+        num_fp_pts = BNC_ratio * num_pts
+        print("Found", num_channels, "channels in BNC ratio:", BNC_ratio)
+
+        fp_arr = np.fromfile(file, dtype=np.float64, count=num_channels * num_fp_pts).reshape(num_channels, num_fp_pts)
+        fp_arr_dst = db.load_trial_fp_data(trial)
+        fp_arr_dst[:, :] = np.transpose(fp_arr)[:, :]
+
+        file.close()
 
     def populate_meta(self, meta, metadata_dict):
         pass

@@ -29,8 +29,6 @@ class Data(File):
         # Internal (non-user facing) settings and flags
         self.current_trial_index = 0
         self.metadata_extension = '.json'
-        self.is_metadata_dirty = False
-        self.meta_daemon_stop_flag = False
 
         # Little Dave reference data
         self.display_widths = [2048, 2048, 1024, 1024, 1024, 1024, 1024, 1024]
@@ -63,7 +61,6 @@ class Data(File):
     def sync_hardware_from_metadata(self):
 
         # Settings that don't matter to File
-        self.set_camera_program(self.db.meta.camera_program, prevent_resize=True)
         self.set_num_pts(self.db.meta.num_pts, prevent_resize=True)
         self.set_num_dark_rli(280, prevent_resize=True)  # currently not user-configurable
         self.set_num_light_rli(200, prevent_resize=True)  # currently not user-configurable
@@ -91,7 +88,6 @@ class Data(File):
             # persist current settings but clear data
             self.meta.num_fp = 4
             self.meta.version = 6
-            self.set_camera_program(7)
             self.save_metadata_to_file(meta_file)
             print("No metadata file found: \n", meta_file,
                   "\nA metadata file has been created. Please make any corrections to the "
@@ -376,10 +372,10 @@ class Data(File):
             self.db.load_mmap_file(mode=None)
 
     def get_display_width(self):
-        return self.display_widths[self.get_camera_program()]
+        return self.meta.width
 
     def get_display_height(self):
-        return self.display_heights[self.get_camera_program()]
+        return self.meta.height
 
     ''' Attributes controlled at Data level '''
 
@@ -388,18 +384,6 @@ class Data(File):
 
     def set_num_fp(self, value):
         self.db.meta.num_fp = value
-
-    def set_camera_program(self, program, force_resize=False, prevent_resize=False):
-        curr_program = self.meta.camera_program
-        if (force_resize or curr_program != program) and not prevent_resize:
-            self.db.meta.camera_program = program
-            self.db.meta.width = self.get_display_width()
-            self.db.meta.height = self.get_display_height()
-            self.meta.int_pts = self.get_int_pts()  # syncs from hardware
-            self.increment_record_until_filename_free()
-
-    def get_camera_program(self):
-        return self.db.meta.camera_program
 
     def set_measure_window(self, kind, index, value):
         if index is None:

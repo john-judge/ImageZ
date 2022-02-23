@@ -39,6 +39,13 @@ class File:
     def get_filenames_in_folder(self):
         return os.listdir(self.get_save_dir())
 
+    def file_exists_in_own_path(self, filename):
+        path = filename.split("/")
+        file_no_path = path[-1]
+        path = path[:-1]
+        path = "/".join(path)
+        return file_no_path in os.listdir(path)
+
     def get_filename(self, slice_num, location_num, record_num, extension, path=None):
 
         fn = self.pad_zero(slice_num) + '-'  \

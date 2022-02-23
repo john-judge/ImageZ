@@ -17,7 +17,7 @@ class Metadata:
         self.int_trials = 10  # ms
         self.num_records = 1
         self.int_records = 15  # seconds
-        self.camera_program = 2
+        self.camera_program = None
         self.height = 320
         self.width = 1024
         self.num_pulses = [1, 1]
