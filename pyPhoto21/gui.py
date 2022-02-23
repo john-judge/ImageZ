@@ -32,7 +32,7 @@ class GUI:
         self.exporter = Exporter(self.tv, self.fv)
         self.layouts = Layouts(data)
         self.window = None
-        self.autoload_dir = None
+        self.autoload_dir = self.data.get_save_dir()
 
         # general state/settings
         self.title = "Photo21"
