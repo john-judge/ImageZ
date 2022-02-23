@@ -42,18 +42,8 @@ class TSM_Reader(File):
 
         print("Reading file as", num_pts, "images of size", width, "x", height)
 
-        images = np.zeros((num_pts, height, width), dtype=np.int16)
-
-        for k in range(num_pts):
-            for i in range(height):
-                for j in range(width):
-                    images[k, i, j] = int.from_bytes(file.read(2), byteorder='little')
-
-        dark_frame = np.zeros((height, width), dtype=np.int16)
-
-        for i in range(height):
-            for j in range(width):
-                dark_frame[i, j] = int.from_bytes(file.read(2), byteorder='little')
+        images = np.fromfile(file, dtype=np.int16, count=num_pts * width * height).reshape(num_pts, height, width)
+        dark_frame = np.fromfile(file, dtype=np.int16, count=width * height).reshape(height, width)
         file.close()
 
         # set metadata in preparation for file creation
