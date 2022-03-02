@@ -96,15 +96,18 @@ class Exporter(File):
 
     def import_regions_from_tsv(self, filename):
         # missing values are filled with -1
-        regions = np.genfromtxt(fname=filename,
-                                delimiter="\t",
-                                skip_header=1,
-                                dtype=int)
         annotations = np.genfromtxt(fname=filename,
                                     delimiter="\t",
                                     max_rows=1,
                                     dtype=str)
+        regions = np.genfromtxt(fname=filename,
+                                delimiter="\t",
+                                skip_header=1,
+                                usecols=np.arange(0, 2 * len(annotations)),
+                                invalid_raise=False,
+                                dtype=int)
         regions = np.array(regions)
+        print(regions, annotations)
 
         if len(regions.shape) == 1:  # all of the regions are 1-px selections
             for i in range(len(annotations)):

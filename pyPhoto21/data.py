@@ -479,13 +479,15 @@ class Data(File):
         elif index is None:
             return ret_trace
         elif type(index) == np.ndarray:
-            if index.shape[0] == 1:
+            if np.size(index) < 1:
+                print("get_display_trace: drawn shape is empty:", index)
+            elif index.shape[0] == 1:
                 if index[0, 1] >= images.shape[1]:
                     return None  # image must have changed, pixel no longer valid.
                 if index[0, 0] >= images.shape[2]:
                     return None  # image must have changed, pixel no longer valid.
                 ret_trace = images[:, index[0, 1], index[0, 0]]
-            elif np.size(index) > 0:
+            else:
                 _, h, w = images.shape
                 mask = self.get_frame_mask(h, w, index=index)
                 try:
@@ -495,8 +497,6 @@ class Data(File):
                 if ret_trace.size < 1:
                     return None
                 ret_trace = np.average(ret_trace, axis=1)
-            else:
-                print("get_display_trace: drawn shape is empty:", index)
 
         if ret_trace is None or ret_trace.size < 1:
             return None
