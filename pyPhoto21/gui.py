@@ -202,6 +202,7 @@ class GUI:
         if folder is not None:
             self.autoload_dir = folder
             print("New directory watched for files to analyze:", folder)
+            self.update_autoload_files()
 
     def autoload_file(self, **kwargs):
         selected_file = kwargs['values'][0]
@@ -671,12 +672,7 @@ class GUI:
             self.event_mapping = EventMapping(self).get_event_mapping()
 
     def update_tracking_num_fields(self, no_plot_update=False, **kwargs):
-        self.window["Slice Number"].update(self.data.get_slice_num())
-        self.window["Location Number"].update(self.data.get_location_num())
-        self.window["Record Number"].update(self.data.get_record_num())
         self.window["Trial Number"].update(self.data.get_current_trial_index())
-        self.window["File Name"].update(self.data.db.get_current_filename(no_path=True,
-                                                                          extension=self.data.db.extension))
         if not no_plot_update:
             self.fv.update_new_image()
             self.tv.update_new_traces()

@@ -121,7 +121,7 @@ class Data(File):
 
         if extension in ["zda", 'tsm', 'fit', 'fits']:  # import files requiring conversion
             # We will auto-create some files, so find names:
-            self.increment_record_until_filename_free()
+            self.find_filename_free()
 
             new_meta = Metadata()
             self.set_meta(new_meta, suppress_resize=True)
@@ -199,34 +199,6 @@ class Data(File):
     def set_is_trial_averaging_enabled(self, v):
         self.meta.is_trial_averaging_enabled = v
 
-    def increment_slice(self, num=1):
-        self.save_metadata_to_json()
-        self.db.meta.current_slice += num
-        self.db.meta.current_location = 0
-        self.db.meta.current_record = 0
-        self.set_current_trial_index(0)
-        self.db.open_filename = None
-        self.load_current_metadata_file()
-        self.db.load_mmap_file(mode=None)
-
-    def increment_location(self, num=1):
-        self.save_metadata_to_json()
-        self.db.meta.current_location += num
-        self.db.meta.current_record = 0
-        self.set_current_trial_index(0)
-        self.db.open_filename = None
-        self.load_current_metadata_file()
-        self.db.load_mmap_file(mode=None)
-
-    def increment_record(self, num=1, suppress_file_create=False):
-        self.save_metadata_to_json()
-        self.db.meta.current_record += num
-        self.set_current_trial_index(0)
-        self.db.open_filename = None
-        if not suppress_file_create:
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-
     # includes paths
     def find_existing_file_pair(self, direction=1):
         files = self.get_filenames_in_folder()
@@ -267,109 +239,6 @@ class Data(File):
         ind = (paired_files.index(curr_filename) + direction) % len(paired_files)
         file_prefix = self.get_save_dir() + "\\" + paired_files[ind]
         return file_prefix + self.metadata_extension, file_prefix + self.db.extension
-
-    def auto_change_file(self, direction=1):
-        self.save_metadata_to_json()
-        files = self.find_existing_file_pair(direction=direction)  # includes paths
-        if files is None:
-            return
-        meta_file, data_file = files
-        meta_obj = self.load_metadata_from_file(meta_file)
-        if meta_obj is not None:
-            self.set_meta(meta_obj, suppress_resize=True)
-            self.db.load_mmap_file(mode='r+', filename=data_file)
-
-    def increment_file(self):
-        self.auto_change_file(direction=1)
-
-    def decrement_file(self):
-        self.auto_change_file(direction=-1)
-
-    def decrement_slice(self, num=1):
-        self.save_metadata_to_json()
-        self.db.meta.current_slice -= num
-        if self.db.meta.current_slice >= 0:
-            self.set_current_trial_index(0)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        else:
-            self.db.meta.current_slice = 0
-            if num > 1:
-                self.db.meta.current_location = 0
-                self.db.meta.current_record = 0
-                self.db.open_filename = None
-                self.load_current_metadata_file()
-                self.db.load_mmap_file(mode=None)
-
-    def decrement_location(self, num=1):
-        self.save_metadata_to_json()
-        self.db.meta.current_location -= num
-        if self.db.meta.current_location >= 0:
-            self.db.meta.current_record = 0
-            self.set_current_trial_index(0)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        else:
-            self.db.meta.current_location = 0
-            if num > 1:
-                self.db.open_filename = None
-                self.load_current_metadata_file()
-                self.db.load_mmap_file(mode=None)
-
-    def decrement_record(self, num=1):
-        self.save_metadata_to_json()
-        self.db.meta.current_record -= num
-        if self.db.meta.current_record >= 0:
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        else:
-            self.db.meta.current_record = 0
-            if num > 1:
-                self.db.open_filename = None
-                self.load_current_metadata_file()
-                self.db.load_mmap_file(mode=None)
-
-    def set_slice(self, v):
-        self.save_metadata_to_json()
-        if v > self.db.meta.current_slice:
-            self.increment_slice(v - self.db.meta.current_slice)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        elif v < self.db.meta.current_slice:
-            self.decrement_slice(self.db.meta.current_slice - v)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-
-    def set_record(self, v):
-        self.save_metadata_to_json()
-        if v > self.db.meta.current_record:
-            self.increment_record(v - self.db.meta.current_record)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        elif v < self.db.meta.current_record:
-            self.decrement_record(self.db.meta.current_record - v)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-
-    def set_location(self, v):
-        self.save_metadata_to_json()
-        if v > self.db.meta.current_location:
-            self.increment_location(v - self.db.meta.current_location)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
-        if v < self.db.meta.current_location:
-            self.decrement_location(self.db.meta.current_location - v)
-            self.db.open_filename = None
-            self.load_current_metadata_file()
-            self.db.load_mmap_file(mode=None)
 
     def get_display_width(self):
         return self.meta.width
@@ -428,9 +297,9 @@ class Data(File):
                                        h,
                                        w),
                                       dtype=np.uint16)
-        self.increment_record_until_filename_free()
+        self.find_filename_free()
 
-    def increment_record_until_filename_free(self):
+    def find_filename_free(self):
         i = 0
         while i < 100 and (
                 self.file_exists(self.db.get_current_filename(no_path=True,
@@ -448,7 +317,7 @@ class Data(File):
             if self.db.open_filename is not None:
                 self.db.open_filename = None
             else:
-                self.increment_record(suppress_file_create=True)  # can create new files
+                self.meta.current_record += 1  # can create new files
                 i += 1
 
         if i >= 100:
@@ -713,7 +582,7 @@ class Data(File):
             return
         tmp = self.get_num_pts()
         if (force_resize or tmp != value) and not prevent_resize:
-            self.increment_record_until_filename_free()
+            self.find_filename_free()
         self.meta.num_pts = value
 
     # Populate meta.rli_high from RLI raw frames
@@ -854,12 +723,16 @@ class Data(File):
         self.current_trial_index = v
 
     def increment_current_trial_index(self):
+        if self.get_is_trial_averaging_enabled():
+            return
         if self.current_trial_index is None:
             self.current_trial_index = 0
         self.current_trial_index = min(self.current_trial_index + 1,
                                        self.get_num_trials() - 1)
 
     def decrement_current_trial_index(self):
+        if self.get_is_trial_averaging_enabled():
+            return
         if self.current_trial_index is None:
             self.current_trial_index = 0
         self.current_trial_index = max(self.current_trial_index - 1, 0)
