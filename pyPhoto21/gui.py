@@ -220,7 +220,8 @@ class GUI:
         self.tv.update_new_traces()
 
     def get_watched_files(self):
-        return os.listdir(self.autoload_dir)
+        return [f for f in os.listdir(self.autoload_dir) if
+                any([f.endswith(ext) for ext in ['.npy', '.tsm', '.zda', '.tbn', '.json']])]
 
     def update_autoload_files(self, selected_file=None):
         if self.autoload_dir is None:
