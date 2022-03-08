@@ -42,10 +42,6 @@ class EventMapping:
                 'function': gui.set_digital_binning,
                 'args': {},
             },
-            "Choose Save Directory": {
-                'function': gui.choose_save_dir,
-                'args': {},
-            },
             'Choose Load Directory': {
                 'function': gui.choose_load_dir,
                 'args': {},

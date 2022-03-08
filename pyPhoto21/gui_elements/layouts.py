@@ -21,7 +21,7 @@ class Layouts:
 
     def create_menu(self):
         menu_def = [['Photo21 LilDave', ['Help', 'About']],
-                    ['File', ['Open', 'Choose Save Directory', 'Choose Load Directory', 'Exit']],
+                    ['File', ['Open', 'Choose Load Directory', 'Exit']],
                     ['Preference', ['Save Preference', 'Load Preference'], ],
                     ['Export', ['---', 'Selected Frame to TSV', 'Selected Traces to TSV',
                                 '---', 'Selected Frame to PNG', 'Selected Traces to PNG',
@@ -527,7 +527,8 @@ class Layouts:
         return [
             [sg.Canvas(key='time_course_canvas', size=self.plot_size,
                        tooltip='Time Course Viewer')],
-            [sg.Text("Available Records:")],
+            [sg.Text("Available Records:",
+                     tooltip="Only files in the format ##-##-##.npy can be plotted in Time Course.")],
             [sg.Listbox(values=gui.data.get_data_filenames_in_folder(),
                         size=(50, 20),
                         tooltip="Hold CTRL to select multiple records"

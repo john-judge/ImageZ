@@ -188,20 +188,15 @@ class GUI:
                 break
         wind.close()
 
-    def choose_save_dir(self, **kwargs):
-        folder = self.browse_for_folder()
-        if folder is not None:
-            self.data.set_save_dir(folder)
-            self.data.db.set_save_dir(folder)
-            self.exporter.set_save_dir(folder)
-            self.window["Time Course File Selector"].update(self.data.get_data_filenames_in_folder())
-            print("New save location:", folder)
-
     def choose_load_dir(self, **kwargs):
         folder = self.browse_for_folder()
         if folder is not None:
             self.autoload_dir = folder
+            self.data.set_save_dir(folder)
+            self.data.db.set_save_dir(folder)
+            self.exporter.set_save_dir(folder)
             print("New directory watched for files to analyze:", folder)
+            self.window["Time Course File Selector"].update(self.data.get_data_filenames_in_folder())
             self.update_autoload_files()
 
     def autoload_file(self, **kwargs):
