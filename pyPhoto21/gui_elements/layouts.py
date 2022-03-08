@@ -21,7 +21,7 @@ class Layouts:
 
     def create_menu(self):
         menu_def = [['Photo21 LilDave', ['Help', 'About']],
-                    ['File', ['Open', 'Choose Load Directory', 'Exit']],
+                    ['File', ['Open', 'Choose Load Directory', 'Save As', 'Exit']],
                     ['Preference', ['Save Preference', 'Load Preference'], ],
                     ['Export', ['---', 'Selected Frame to TSV', 'Selected Traces to TSV',
                                 '---', 'Selected Frame to PNG', 'Selected Traces to PNG',

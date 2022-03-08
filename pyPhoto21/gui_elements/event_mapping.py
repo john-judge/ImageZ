@@ -46,6 +46,10 @@ class EventMapping:
                 'function': gui.choose_load_dir,
                 'args': {},
             },
+            'Save As': {
+                'function': gui.save_as_current_file,
+                'args': {}
+            },
             "Load Directory File List": {
                 'function': gui.autoload_file,
                 'args': {},

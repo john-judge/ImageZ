@@ -188,6 +188,17 @@ class GUI:
                 break
         wind.close()
 
+    def save_as_current_file(self):
+        file = self.browse_for_save_as_file(file_types=None)
+        if file is not None:
+            npy_file = file + '.npy'
+            json_file = file + self.data.metadata_extension
+            self.data.save_metadata_to_file(json_file)
+
+            # Set current file in db, copy data directly
+            # so that going forward only the new file is touched
+            self.data.db.move_data_to_file(npy_file)
+
     def choose_load_dir(self, **kwargs):
         folder = self.browse_for_folder()
         if folder is not None:

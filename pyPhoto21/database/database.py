@@ -86,6 +86,11 @@ class Database(File):
             print("File exists and contains nonzero data. Warning: data may be overwritten.")
         self.load_mmap_file(mode=None)
 
+    def move_data_to_file(self, new_file):
+        data = self.memmap_file[:, :, :, :, :]
+        self.load_mmap_file(filename=new_file, mode='w+')
+        self.memmap_file[:, :, :, :, :] = data[:,:,:,:,:]
+
     def load_trial_data_raw(self, trial):
         return self.memmap_file[trial, 0, :-3, :-1, :]
 
