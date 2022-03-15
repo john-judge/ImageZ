@@ -49,12 +49,21 @@ class TSM_Reader(File):
         # set metadata in preparation for file creation
         self.meta.num_pts, self.meta.height, self.meta.width = num_pts, height, width
         self.meta.num_trials = 1
+        self.meta.num_dark_rli = 1
 
         # create npy file from image data
         db.clear_or_resize_mmap_file()  # loads correct dimensions since we already set meta
         arr = db.load_data_raw()
         arr[0, :, :, :] = images[:, :, :]  # only 1 trial per FITS file
-        print(arr.shape)
+
+        # place dark frame into memory
+        dark_array = db.get_rli_low()
+        dark_array[:, :] = dark_frame[:, :]
+
+        # place light frame into memory: first 90 frames
+        light_array = db.get_rli_high()
+        light_array[:, :] = np.average(images[:90, :, :], axis=0)
+
         tbn_filename = filename.split(".tsm")[0] + ".tbn"
         self.load_tbn(tbn_filename, db, num_pts)
 

@@ -403,7 +403,7 @@ class Layouts:
             [sg.Text('Contrast Adjuster',
              tooltip="This contrast adjustment induces saturation. It"
                      " applies to visualization only, not to exported data.")],
-            [sg.Slider(range=(0.5, 50.0),
+            [sg.Slider(range=(0.5, 100.0),
                        default_value=self.data.get_contrast_scaling(),
                        resolution=1.0,
                        enable_events=True,

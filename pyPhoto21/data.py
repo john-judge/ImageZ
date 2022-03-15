@@ -608,7 +608,7 @@ class Data(File):
         while margins * 2 >= d:
             margins //= 2
         rli_low = self.db.get_rli_low()
-        if np.any(rli_low != 0) and not force_recalculate:
+        if d == 1 or (np.any(rli_low != 0) and not force_recalculate):
             return rli_low
         rli_dark_frames = self.get_rli_images()[margins + 1:d - margins - 1, :, :]
         if rli_dark_frames is None or rli_dark_frames.shape[0] == 0:
@@ -635,7 +635,8 @@ class Data(File):
                              self.get_display_width()),
                             dtype=np.uint16)
         diff = np.abs(light.astype(np.float32) - dark.astype(np.float32))
-        diff[diff == 0] = 0.000001  # avoid div by 0
+        rli_cutoff = np.percentile(diff, 30)
+        diff[diff < rli_cutoff] = rli_cutoff  # avoid div by small numbers (by percentile)
         return diff
 
     def set_num_dark_rli(self, dark_rli, force_resize=False, prevent_resize=False):
