@@ -177,13 +177,6 @@ class Data(File):
         print("Loaded", loaded_ct, "attributes from the metadata file.")
         return new_meta  # defaults kept if not in loaded dict
 
-    def get_record_array_shape(self):
-        return (self.get_num_trials(),
-                2,
-                self.get_num_pts(),
-                self.get_display_height(),
-                self.get_display_width())
-
     def get_slice_num(self):
         return self.db.meta.current_slice
 
@@ -240,11 +233,23 @@ class Data(File):
         file_prefix = self.get_save_dir() + "\\" + paired_files[ind]
         return file_prefix + self.metadata_extension, file_prefix + self.db.extension
 
-    def get_display_width(self):
-        return self.meta.width
+    def get_display_width(self, cropped=False):
+        if not cropped:
+            return self.meta.width
+        x0, x1 = self.db.meta.x_cropping
+        w = self.meta.width
+        if x1 > x0:
+            w = min(h, x1 - x0)
+        return w
 
-    def get_display_height(self):
-        return self.meta.height
+    def get_display_height(self, cropped=False):
+        if not cropped:
+            self.meta.height
+        y0, y1 = self.db.meta.y_cropping
+        h = self.meta.height
+        if y1 > y0:
+            h = min(h, y1 - y0)
+        return h
 
     ''' Attributes controlled at Data level '''
 
@@ -456,6 +461,7 @@ class Data(File):
             return tr
 
         images = self.get_acqui_images()
+
         if images is None:
             print("get_display_trace: No images to display.")
             return None
@@ -553,15 +559,25 @@ class Data(File):
             return self.db.load_fp_data()
         return self.db.load_trial_fp_data(trial)
 
+    def apply_frame_cropping(self, images):
+        # apply frame cropping to raw data
+        x0, x1 = self.db.meta.x_cropping
+        y0, y1 = self.db.meta.y_cropping
+        print("Internal window:", x0, 'x', x1, ' AND ', y0, 'x', y1)
+        return images[:, y0:y1, x0:x1]
+
     def get_acqui_images(self):
         trial = self.get_current_trial_index()
         if trial is None:
             images = self.db.load_data_raw()
+            images = self.apply_frame_cropping(images)
             if self.get_is_trial_averaging_enabled():
                 images = np.average(images, axis=0)
             return images
         else:
-            return self.db.load_trial_data_raw(trial)
+
+            images = self.db.load_trial_data_raw(trial)
+            return self.apply_frame_cropping(images)
 
     def get_acqui_memory(self):
         trial = self.get_current_trial_index()
@@ -572,7 +588,8 @@ class Data(File):
 
     # not the memmapped files, but the memory used for RLI acquisition and calc
     def get_rli_images(self):
-        return self.db.rli_images[0, :, :, :]
+        rli_images = self.db.rli_images[0, :, :, :]
+        return self.apply_frame_cropping(rli_images)
 
     def get_rli_memory(self):
         return self.db.rli_images[:, :, :, :]
@@ -592,6 +609,8 @@ class Data(File):
             margins //= 2
         rli_high = self.db.get_rli_high()
         if np.any(rli_high != 0):
+            rli_high = self.apply_frame_cropping(rli_high.reshape((1,) + rli_high.shape))
+            rli_high = rli_high.reshape(rli_high.shape[1], rli_high.shape[2])
             return rli_high
         n = self.get_num_rli_pts()
         rli_light_frames = self.get_rli_images()[d + margins + 1:n - 1 - margins, :, :]
@@ -599,8 +618,12 @@ class Data(File):
             return None
         try:
             rli_high[:, :] = np.average(rli_light_frames, axis=0)[:, :]
+            rli_high = self.apply_frame_cropping(rli_high.reshape((1,) + rli_high.shape))
+            rli_high = rli_high.reshape(rli_high.shape[1], rli_high.shape[2])
         except ValueError:
             print("We're unable to calculate RLI due to invalid array size assumptions.")
+        rli_high = self.apply_frame_cropping(rli_high.reshape((1,) + rli_high.shape))
+        rli_high = rli_high.reshape(rli_high.shape[1], rli_high.shape[2])
         return rli_high
 
     def calculate_dark_rli_frame(self, margins=40, force_recalculate=False):
@@ -609,14 +632,20 @@ class Data(File):
             margins //= 2
         rli_low = self.db.get_rli_low()
         if d == 1 or (np.any(rli_low != 0) and not force_recalculate):
+            rli_low = self.apply_frame_cropping(rli_low.reshape((1,) + rli_low.shape))
+            rli_low = rli_low.reshape(rli_low.shape[1], rli_low.shape[2])
             return rli_low
         rli_dark_frames = self.get_rli_images()[margins + 1:d - margins - 1, :, :]
         if rli_dark_frames is None or rli_dark_frames.shape[0] == 0:
             return None
         try:
             rli_low[:, :] = np.average(rli_dark_frames, axis=0)[:, :]
+            rli_low = self.apply_frame_cropping(rli_low.reshape((1,) + rli_low.shape))
+            rli_low = rli_low.reshape(rli_low.shape[1], rli_low.shape[2])
         except ValueError:
             print("We're unable to calculate RLI due to invalid array size assumptions.")
+        rli_low = self.apply_frame_cropping(rli_low.reshape((1,) + rli_low.shape))
+        rli_low = rli_low.reshape(rli_low.shape[1], rli_low.shape[2])
         return rli_low
 
     def calculate_max_rli_frame(self, force_recalculate=False):
@@ -630,9 +659,11 @@ class Data(File):
     def calculate_rli(self, force_recalculate=False):
         light = self.calculate_light_rli_frame(force_recalculate=force_recalculate)
         dark = self.calculate_dark_rli_frame(force_recalculate=force_recalculate)
+        print(light.shape, dark.shape)
         if light is None or dark is None:
-            return np.zeros((self.get_display_height(),
-                             self.get_display_width()),
+            h = self.get_display_height(cropped=True)
+            w = self.get_display_width(cropped=True)
+            return np.zeros((h, w),
                             dtype=np.uint16)
         diff = np.abs(light.astype(np.float32) - dark.astype(np.float32))
         rli_cutoff = np.percentile(diff, 30)
@@ -642,8 +673,8 @@ class Data(File):
     def set_num_dark_rli(self, dark_rli, force_resize=False, prevent_resize=False):
         tmp = self.meta.num_dark_rli
         if (force_resize or tmp != dark_rli) and not prevent_resize:
-            w = self.get_display_width()
-            h = self.get_display_height()
+            w = self.get_display_width(cropped=True)
+            h = self.get_display_height(cropped=True)
             np.resize(self.db.rli_images, (2,
                                            self.get_num_rli_pts(),
                                            w,
@@ -653,8 +684,8 @@ class Data(File):
     def set_num_light_rli(self, light_rli, force_resize=False, prevent_resize=False):
         tmp = self.meta.num_light_rli
         if (force_resize or tmp != light_rli) and not prevent_resize:
-            w = self.get_display_width()
-            h = self.get_display_height()
+            w = self.get_display_width(cropped=True)
+            h = self.get_display_height(cropped=True)
             np.resize(self.db.rli_images, (2,  # extra mem for C++ reassembly
                                            self.get_num_rli_pts(),
                                            w,
@@ -774,3 +805,9 @@ class Data(File):
             self.meta.camera_artifact_exclusion_window = v
         if ind in [0, 1]:
             self.meta.camera_artifact_exclusion_window[ind] = v
+
+    def set_frame_crop_window(self, kind, ind, v):
+        if kind == 'x':
+            self.meta.x_cropping[ind] = v
+        elif kind == 'y':
+            self.meta.y_cropping[ind] = v

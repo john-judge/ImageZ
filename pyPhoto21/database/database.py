@@ -91,7 +91,7 @@ class Database(File):
         self.load_mmap_file(filename=new_file, mode='w+')
         self.memmap_file[:, :, :, :, :] = data[:,:,:,:,:]
 
-    def load_trial_data_raw(self, trial):
+    def load_trial_data_raw(self, trial, cropped=False):
         return self.memmap_file[trial, 0, :-3, :-1, :]
 
     def load_trial_data_processed(self, trial):

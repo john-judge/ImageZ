@@ -585,8 +585,36 @@ class GUI:
         if len(v) == 0 or float(v) != kwargs['values']:
             window[kwargs['event']].update(v)
 
+    def set_window_generic(self, setter_function, arg_dict):
+        """ No partner field """
+        v = arg_dict['values']
+        kind = arg_dict['kind']
+        index = arg_dict['index']
+
+        max_val = None
+        if kind == 'x':
+            max_val = self.data.get_display_width()
+        elif kind == 'y':
+            max_val = self.data.get_display_height()
+
+        # if possible, trim input of invalid characters
+        while len(v) > 0 and not self.validate_numeric_input(v,
+                                                             non_zero=True,
+                                                             min_val=0,
+                                                             max_val=max_val):
+            v = v[:-1]
+        if len(v) > 0 and self.validate_numeric_input(v,
+                                                      non_zero=True,
+                                                      min_val=0,
+                                                      max_val=max_val):
+            v = int(v)
+            setter_function(kind, index, v)
+        else:
+            self.window[arg_dict['event']].update('')
+
     # generic setter that links together 2 ms / frame linked fields
     def set_time_window_generic(self, setter_function, arg_dict):
+        """ Handling for partner field """
         v = arg_dict['values']
         form = arg_dict['form']
         kind = arg_dict['kind']
@@ -645,6 +673,10 @@ class GUI:
         self.set_time_window_generic(self.data.set_artifact_exclusion_window, kwargs)
         self.fv.update_new_image()
         self.tv.update_new_traces()
+
+    def set_frame_crop_window(self, **kwargs):
+        self.set_window_generic(self.data.set_frame_crop_window, kwargs)
+        self.fv.update_new_image()
 
     def select_baseline_skip_window(self):
         print("select_baseline_skip_window (graphical method) not implemented")

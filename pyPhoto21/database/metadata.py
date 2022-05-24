@@ -68,5 +68,9 @@ class Metadata:
         self.spatial_filter_sigma = 1.0
         self.background_option_index = 0
 
+        # Frame cropping -- applied to raw data when retrieved
+        self.x_cropping = [0, self.width]
+        self.y_cropping = [0, self.height]
+
         # ROI Identification
         self.is_roi_enabled = False

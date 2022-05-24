@@ -245,6 +245,7 @@ class Layouts:
 
     def create_array_tab(self, gui):
         checkbox_size = (10, 1)
+        button_size = (5, 1)
         background_options = gui.data.get_background_options()
         colormap_options = gui.fv.get_color_map_options()
         return [
@@ -266,8 +267,8 @@ class Layouts:
                          enable_events=True,
                          key="Show RLI",
                          size=checkbox_size,
-                         tooltip="When selected, RLI frame is shown in the Frame Viewer.")],
-            [sg.Checkbox('RLI Division',
+                         tooltip="When selected, RLI frame is shown in the Frame Viewer."),
+             sg.Checkbox('RLI Division',
                          default=self.data.get_is_rli_division_enabled(),
                          enable_events=True,
                          key="RLI Division",
@@ -279,9 +280,35 @@ class Layouts:
                          size=checkbox_size)],
             [sg.Text("Digital Binning:"), sg.InputText(default_text=gui.data.meta.binning,
                                                        key="Digital Binning",
-                                                       size=(5, 1),
+                                                       size=button_size,
                                                        enable_events=True)],
-            [sg.Button("Load Image", button_color=('gray', 'black'))],
+            [sg.Text("Frame X-Cropping"),
+             sg.InputText(key="Frame X-Cropping Window Start",
+                          tooltip="Cropping applied to raw data",
+                          default_text=str(gui.data.db.meta.x_cropping[0]),
+                          enable_events=True,
+                          size=button_size),
+             sg.Text(" to "),
+             sg.InputText(key="Frame X-Cropping Window End",
+                          tooltip="Cropping applied to raw data",
+                          default_text=str(gui.data.db.meta.x_cropping[1]),
+                          enable_events=True,
+                          size=button_size),
+             sg.Text(" pixels")],
+            [sg.Text("Frame Y-Cropping"),
+             sg.InputText(key="Frame Y-Cropping Window Start",
+                          tooltip="Cropping applied to raw data",
+                          default_text=str(gui.data.db.meta.y_cropping[0]),
+                          enable_events=True,
+                          size=button_size),
+             sg.Text(" to "),
+             sg.InputText(key="Frame Y-Cropping Window End",
+                          tooltip="Cropping applied to raw data",
+                          default_text=str(gui.data.db.meta.y_cropping[1]),
+                          enable_events=True,
+                          size=button_size),
+             sg.Text(" pixels")],
+            # [sg.Button("Load Image", button_color=('gray', 'black'))],
         ]
 
     def create_baseline_tab(self, gui):

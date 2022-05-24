@@ -360,6 +360,26 @@ class EventMapping:
             "Time Course File Selector": {
                 'function': gui.tcv.update_file_list,
                 'args': {}
+            },
+            "Frame X-Cropping Window Start": {
+                'function': gui.set_frame_crop_window,
+                'args': {'index': 0,
+                         'kind': 'x'}
+            },
+            "Frame X-Cropping Window End": {
+                'function': gui.set_frame_crop_window,
+                'args': {'index': 1,
+                         'kind': 'x'}
+            },
+            "Frame Y-Cropping Window Start": {
+                'function': gui.set_frame_crop_window,
+                'args': {'index': 0,
+                         'kind': 'y'}
+            },
+            "Frame Y-Cropping Window End": {
+                'function': gui.set_frame_crop_window,
+                'args': {'index': 1,
+                         'kind': 'y'}
             }
 
         }
