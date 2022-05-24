@@ -563,7 +563,6 @@ class Data(File):
         # apply frame cropping to raw data
         x0, x1 = self.db.meta.x_cropping
         y0, y1 = self.db.meta.y_cropping
-        print("Internal window:", x0, 'x', x1, ' AND ', y0, 'x', y1)
         return images[:, y0:y1, x0:x1]
 
     def get_acqui_images(self):
@@ -659,7 +658,6 @@ class Data(File):
     def calculate_rli(self, force_recalculate=False):
         light = self.calculate_light_rli_frame(force_recalculate=force_recalculate)
         dark = self.calculate_dark_rli_frame(force_recalculate=force_recalculate)
-        print(light.shape, dark.shape)
         if light is None or dark is None:
             h = self.get_display_height(cropped=True)
             w = self.get_display_width(cropped=True)
